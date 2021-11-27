@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import Qt, QTime, QTimer
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
+from PyQt5.QtCore import QLine, QRegExp, Qt, QTime, QTimer
+from PyQt5.QtGui import QDoubleValidator, QFont, QValidator
+from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog
 from GUI import BlockWidget
 from blockchain.block import Block, Blockchain
@@ -198,19 +198,71 @@ class MainWindow(QTabWidget):
         self.lb_money_list = []
         self.bn_copy_list = []
 
-        self.usersbox_update()
+        self.usersbox_update("")
 
-        self.timer.timeout.connect(self.usersbox_update)
+        ln_name = QLineEdit()
+        ln_addr = QLineEdit()
+        ln_money_min = QLineEdit()
+        ln_money_min.setValidator(QDoubleValidator())
+        ln_money_max = QLineEdit()
+        ln_money_max.setValidator(QDoubleValidator())
+
+        self.timer.timeout.connect(
+            lambda: self.usersbox_update(ln_name.text(), ln_addr.text(), (ln_money_min.text(), ln_money_max.text())))
 
         # 右侧：空间按钮
 
         buttonBox = QFrame()
         buttonBox.setFrameShape(QFrame.Box)
+
+        lb_name = QLabel()
+        lb_name.setText("用户名：")
+        lb_name.setParent(buttonBox)
+        lb_name.setFixedSize(150, 30)
+        lb_name.move(30, 50)
+
+        ln_name.setParent(buttonBox)
+        ln_name.setFixedSize(150, 30)
+        ln_name.move(120, 50)
+
+        lb_addr = QLabel()
+        lb_addr.setText("公钥：")
+        lb_addr.setParent(buttonBox)
+        lb_addr.setFixedSize(150, 30)
+        lb_addr.move(30, 100)
+
+        ln_addr.setParent(buttonBox)
+        ln_addr.setFixedSize(150, 30)
+        ln_addr.move(120, 100)
+
+        lb_money = QLabel()
+        lb_money.setText("持有金额：")
+        lb_money.setParent(buttonBox)
+        lb_money.setFixedSize(150, 30)
+        lb_money.move(30, 150)
+
+        ln_money_min.setParent(buttonBox)
+        ln_money_min.setFixedSize(60, 30)
+        ln_money_min.move(120, 150)
+
+        lb_money_to = QLabel()
+        lb_money_to.setParent(buttonBox)
+        lb_money_to.setText("-")
+        lb_money_to.setFixedSize(30, 30)
+        lb_money_to.move(190, 150)
+
+        ln_money_max.setParent(buttonBox)
+        ln_money_max.setFixedSize(60, 30)
+        ln_money_max.move(210, 150)
+
+        ln_money_min.setParent(buttonBox)
+        ln_money_max.setParent(buttonBox)
+
         btn_createUser = QPushButton()
         btn_createUser.setParent(buttonBox)
         btn_createUser.setText("创建新账户")
         btn_createUser.setFixedSize(200, 80)
-        btn_createUser.move(45, 50)
+        btn_createUser.move(45, 250)
         self.tab3_layout.addWidget(buttonBox, 1)
 
         btn_createUser.clicked.connect(self.create_user_clicked)
@@ -237,12 +289,19 @@ class MainWindow(QTabWidget):
         info.exec()
 
         self.all_user.append(new_user)
-        self.usersbox_update()
         logging.info("创建用户完毕。")
 
-    def usersbox_update(self):
+    def usersbox_update(self, info: str = "", pub: str = "", money: tuple = (0, 1e18)):
         db = DB("localhost", _passwd="csnb")
-        users = db.select("SELECT * FROM 用户", True)
+        sql = "SELECT * FROM 用户 WHERE 用户名 LIKE '" + info + "%'"
+        sql += "AND 公钥 LIKE '" + pub + "%'"
+        if money[0] == "":
+            money = (0, money[1])
+        if money[1] == "":
+            money = (money[0], 1e18)
+        sql += "AND 余额 BETWEEN " + str(money[0]) + " AND " + str(money[1])
+        print(sql)
+        users = db.select(sql, True)
 
         self.usersBox = QWidget()
         self.usersBox.setMinimumSize(
