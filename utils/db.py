@@ -88,6 +88,7 @@ class DB(object):
                 前驱哈希 VARCHAR(100),\
                 Merkle哈希 VARCHAR(100),\
                 时间戳 TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)\
+                Nonce VARCHAR(100) \
             )"
         )
         self.execute(
@@ -113,9 +114,9 @@ class DB(object):
         self.execute(
             "CREATE TABLE IF NOT EXISTS 输出 (\
                 输出哈希 VARCHAR(100) PRIMARY KEY,\
-                花费标志 VARCHAR(100),\
-                编号 VARCHAR(100),\
+                花费标志 boolean,\
                 数额 FLOAT,\
+                交易哈希 VARCHAR(100), \
                 收款地址 VARCHAR(100),\
                 FOREIGN KEY (收款地址) REFERENCES 店铺(收款地址)\
             )"
