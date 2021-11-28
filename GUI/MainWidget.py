@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtCore import QLine, QRegExp, Qt, QTime, QTimer
-from PyQt5.QtGui import QDoubleValidator, QFont, QValidator
+from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator, QValidator
 from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog
 from GUI import BlockWidget
@@ -179,7 +179,11 @@ class MainWindow(QTabWidget):
         self.usersbox_update("")
 
         ln_name = QLineEdit()
+        ln_name.setValidator(QRegExpValidator(
+            QRegExp("([a-zA-Z0-9]+)(([ ]([a-zA-Z0-9]+))*)$")))
         ln_addr = QLineEdit()
+        ln_addr.setValidator(QRegExpValidator(
+            QRegExp("([a-zA-Z0-9]+)(([ ]([a-zA-Z0-9]+))*)$")))
         ln_money_min = QLineEdit()
         ln_money_min.setValidator(QDoubleValidator())
         ln_money_max = QLineEdit()
@@ -251,6 +255,12 @@ class MainWindow(QTabWidget):
         _name, ok = QInputDialog.getText(self, "输入名字", "请输入用户姓名")
         if not ok:
             logging.info("用户取消创建")
+            return
+        reg = QRegExp("([a-zA-Z0-9]+)(([ ]([a-zA-Z0-9]+))*)$")
+        if not reg.exactMatch(_name):
+            logging.info("用户名格式错误")
+            QMessageBox.information(
+                self, "用户名格式错误", "用户名只能包含连续的字母数字段，每段以一个空格隔开。\n用户名不能为空。")
             return
 
         new_user = User(User.create_user(_name))
