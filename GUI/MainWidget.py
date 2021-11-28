@@ -58,29 +58,7 @@ class MainWindow(QTabWidget):
         self.addTab(self.account_widget, "账户信息")
         self.addTab(self.deal_widget, "交易页面")
 
-        # 初始化
-        # 创建用户
-        """print("为了方便展示，这里预创建了 10 个用户。")
-        from tqdm import tqdm
-        with tqdm(total=10) as loading_bar:
-            loading_bar.set_description("初始化进度")
-            for i in range(10):
-                self.all_user.append(User(User.create_user()))
-                loading_bar.update(1)
-
-        print("这里给出了两个用户的信息，方便演示挖矿和交易。")
-        print("地址(User 2): " + self.all_user[0].address)
-        print("压缩私匙: " + self.all_user[1].wif)"""
-        # self.all_user.append(User(User.create_user()))
-
-        # 创建区块链
-        # 首先创建创世区块，矿工为 bright
-        # foundation = Block(self.all_user[0].address)
-        # second_block = Block(self.all_user[1].address)
-        # 创建区块链
         blockchain = Blockchain()
-        # blockchain.add_block(foundation)
-        # blockchain.add_block(second_block)
         self.set_blockchain(blockchain)
 
         self.set_tab1_ui()
@@ -210,7 +188,7 @@ class MainWindow(QTabWidget):
         self.timer.timeout.connect(
             lambda: self.usersbox_update(ln_name.text(), ln_addr.text(), (ln_money_min.text(), ln_money_max.text())))
 
-        # 右侧：空间按钮
+        # 右侧：筛选与新增用户按钮
 
         buttonBox = QFrame()
         buttonBox.setFrameShape(QFrame.Box)
@@ -300,7 +278,7 @@ class MainWindow(QTabWidget):
         if money[1] == "":
             money = (money[0], 1e18)
         sql += "AND 余额 BETWEEN " + str(money[0]) + " AND " + str(money[1])
-        print(sql)
+        logging.debug("执行 SQL：{}".format(sql))
         users = db.select(sql, True)
 
         self.usersBox = QWidget()

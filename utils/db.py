@@ -1,3 +1,4 @@
+import logging
 import pymysql
 
 
@@ -44,7 +45,9 @@ class DB(object):
                 return res
 
         except Exception as e:
-            print("出现错误：{}".format(e))
+            logging.warning("SQL 语句执行错误：{}".format(e))
+            # print("出现错误：{}".format(e))
+            return []
 
     def execute(self, inst: str) -> None:
         """
