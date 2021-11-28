@@ -22,7 +22,3 @@
 - GUI
   - BlockWidget.py
   - MainWidget.py
-
-## 更新日志
-
-
