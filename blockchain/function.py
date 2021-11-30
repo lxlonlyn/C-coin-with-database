@@ -16,7 +16,7 @@ def make_deal(user: User, receive_address: str, value: float) -> any:
     :param value: 交易的数额
     '''
     # 第一步，找属于该用户的输出
-    db = DB("localhost", _password = "csnb")
+    db = DB("localhost", _passwd = "csnb")
     available_out: Tuple = db.select(
         "select * \
         from 输出 \
@@ -50,18 +50,20 @@ def make_deal(user: User, receive_address: str, value: float) -> any:
         )
         sign: Tuple = ECDSA.gen_signature(each[-1], int(user.private_key, 16))
         pre_out_hash: str= each[0]
-        public_key: Tuple = user.public_key
+        compressed_public_key: Tuple = ECDSA.get_compressed_public_key_from_public_key(user.public_key)
         # 这里先构建输入
         # 输入（签名，输出哈希，交易哈希，公钥）
         # 输入中的交易哈希只有交易构建完毕后才可以知道，所以先赋空值。
-        in_list.append([sign, pre_out_hash, public_key])
+        # 由于签名是一个(int, int)的元组，存入数据库时，转成字符串
+        in_list.append([str(sign[0]) + ',' + str(sign[1]), 
+                        pre_out_hash, 
+                        compressed_public_key])
 
         # 记录一下该输入的哈希
         input_string = pre_out_hash \
                         + str(sign[0]) \
                         + str(sign[1]) \
-                        + str(public_key[0] \
-                        + str(public_key[1]))
+                        + str(compressed_public_key) 
         in_out_hash_list.append(my_sha256(input_string))
     # 第四步，构建输出
     # 这一步同样收集一下输出的哈希值，供计算交易哈希使用
@@ -75,8 +77,7 @@ def make_deal(user: User, receive_address: str, value: float) -> any:
     in_out_hash_list.append(out_hash_to_target)
     # 再考虑给自己的找零
     if tot != value:
-        value = tot - value
-        out_hash_to_sender: str = my_sha256(str(value) + receive_address + str(time.time()))
+        out_hash_to_sender: str = my_sha256(str(tot - value) + receive_address + str(time.time()))
         in_out_hash_list.append(out_hash_to_sender)
 
     # 第五步，构建交易
@@ -104,15 +105,15 @@ def make_deal(user: User, receive_address: str, value: float) -> any:
     db.execute(
         "insert \
         into 输出 \
-        values('%s', 0, '%s', NULL, '%s')" \
-        % (out_hash_to_target, value, receive_address)
+        values('%s', 0, '%s', '%s', '%s')" \
+        % (out_hash_to_target, value, transaction_hash ,receive_address)
     )
     if tot != value:
         db.execute(
                 "insert \
                 into 输出 \
-                values('%s', 0, '%s', '%s')" \
-                % (out_hash_to_sender, value, user.address)
+                values('%s', 0, '%s', '%s', '%s')" \
+                % (out_hash_to_sender, tot - value, transaction_hash, user.address)
         )
 
 
@@ -125,7 +126,7 @@ def dig_source(minner_address: str) -> str:
 
     函数返回新区块的区块哈希
     '''
-    db = DB("localhost", _password = "csnb")
+    db = DB("localhost", _passwd = "csnb")
 
     # 第一步，创建coinbase交易，即矿工给自己的挖矿奖励50个币
     coinbase: str = my_sha256(str(50) + minner_address + str(time.time()))
@@ -148,8 +149,49 @@ def dig_source(minner_address: str) -> str:
     transcation_to_be_packed: List = db.select(
         "select 交易哈希 \
         from 交易 \
-        where 区块哈希 = NULL"
+        where 区块哈希 is NULL"
     )
+
+    # 下一步，选中的交易中，对其签名进行验证
+    tmp = []
+    for each in transcation_to_be_packed:
+        cur_transaction_hash = each[0]
+        verify_ok: bool = True
+        # 对每个each（交易），先从输入的表中找到该交易包含的输入
+        in_list = db.select(
+            "select * \
+            from 输入 \
+            where 交易哈希 = '%s'" \
+            % cur_transaction_hash
+        )
+        # 对于in_list中每个输入，我们对它验证签名；
+        # 一旦有一个输入无法通过签名验证，该交易作废，拒绝被打包进入区块
+        # 下面是对输入的签名验证流程
+        for each_in in in_list:
+            # 首先找到该输入引用的输出，存储它的解锁脚本，即收款地址，这其实也是该签名所保证的消息内容
+            used_out_address = db.select(
+                "select 收款地址 \
+                from 输出 \
+                where 输出哈希 = '%s'" \
+                % each_in[1]
+            )[0][0]
+            # 然后取出该输入中的公钥
+            public_key = ECDSA.get_public_key_from_compressed_public_key(each_in[3])
+            # 最后取出该输入中的签名
+            # 由于签名在存储时，由一个 Tuple[int, int]转为一个字符串存储，所以这里把它还原
+            string = each_in[0]
+            index_of_comma = string.index(',')
+            sign = int(string[:index_of_comma]), int(string[index_of_comma + 1:])
+            # 至此，所有变量准备完毕
+            # 如果验证失败，则拒绝打包该交易
+            if not ECDSA.verify_signature(used_out_address, public_key, sign):
+                verify_ok = False
+                break
+        # 所有输入已经扫描完毕
+        if verify_ok:
+            tmp.append(each)
+    # 将签名通过的交易结果记录
+    transcation_to_be_packed = tmp[:]
 
     # 第二步，计算 Merkle 树根
     # 先把刚刚 select 得到的元组中取出其交易哈希值，存入 cur
@@ -173,25 +215,34 @@ def dig_source(minner_address: str) -> str:
     merkle_hash = cur[0]
 
     # 第二步，确定前驱哈希
-    previous_hash = db.select(
-        "select 区块哈希 \
-        from 区块 \
-        where 时间戳 = ( \
-            select MAX(时间戳) \
+    previous_hash = ''
+    block_num = db.select(
+        "select COUNT('区块哈希') \
+        from 区块"
+    )[0][0]
+    if block_num == 0:
+        # 如果此时没有区块，则创建创世区块
+        previous_hash = '0' * 64
+    else:
+        previous_hash = db.select(
+            "select 区块哈希 \
             from 区块 \
-        )"
-    )[0]
+            where 时间戳 = ( \
+                select MAX(时间戳) \
+                from 区块 \
+            )"
+        )[0][0]
 
     # 第三步，变换Nonce，计算区块哈希
     # 要求前 7 位为 0
     Nonce: str = ''
     block_hash: str = ''
     for i in range(0, 4294967297):
-        cur_hash = my_sha256(my_sha256(previous_hash + merkle_hash + i))
+        cur_hash = my_sha256(my_sha256(previous_hash + merkle_hash + str(i)))
         # 检查前7位是否是全0
         seven_digits_are_all_zero: bool = True
-        for i in range(0, 7):
-            if(cur_hash[i] != '0'):
+        for j in range(0, 2):
+            if(cur_hash[j] != '0'):
                 seven_digits_are_all_zero = False
                 break
         # 如果不满足前 7 位 为 0，那么继续改变 Nonce
@@ -200,6 +251,7 @@ def dig_source(minner_address: str) -> str:
         # 如果满足，则挖矿成功
         else:
             Nonce = hex(i)[2:]
+            Nonce = '0' * (8 - len(Nonce)) + Nonce
             block_hash = cur_hash
             break
     
@@ -215,7 +267,7 @@ def dig_source(minner_address: str) -> str:
     db.execute(
         "update 交易\
         set 区块哈希 = '%s' \
-        where 区块哈希 = NULL" \
+        where 区块哈希 is NULL" \
         % block_hash
     )
     return block_hash
