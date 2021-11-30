@@ -87,7 +87,7 @@ class DB(object):
                 区块哈希 VARCHAR(100) PRIMARY KEY,\
                 前驱哈希 VARCHAR(100),\
                 Merkle哈希 VARCHAR(100),\
-                时间戳 TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)\
+                时间戳 TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),\
                 Nonce VARCHAR(100) \
             )"
         )
@@ -123,7 +123,7 @@ class DB(object):
         )
         self.execute(
             "CREATE TABLE IF NOT EXISTS 输入 (\
-                签名 VARCHAR(100) PRIMARY KEY,\
+                签名 VARCHAR(200) PRIMARY KEY,\
                 输出哈希 VARCHAR(100),\
                 交易哈希 VARCHAR(100),\
                 公钥 VARCHAR(100),\
@@ -136,7 +136,7 @@ class DB(object):
             "CREATE TABLE IF NOT EXISTS 应用程序 (\
                 应用编号 VARCHAR(100) PRIMARY KEY,\
                 应用名称 VARCHAR(100),\
-                应用大小 VARCHAR(100),\
+                应用大小 INT(100),\
                 应用版本 VARCHAR(100),\
                 使用系统 VARCHAR(100),\
                 价格 FLOAT,\

@@ -44,27 +44,31 @@ class User(object):
         db = DB("localhost", _passwd="csnb")
         info = ECDSA.get_compressed_public_key_from_public_key(
             ECDSA.get_public_key_from_private_key(temp.private_key))
-
+        address = ECDSA.get_address_from_compressed_public_key(info)
         if _name != '':
             name = "'" + _name + "'"
         else:
             name = 'NULL'
         db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+        db.execute("insert \
+                    into 店铺 \
+                    values('%s', %s)" \
+                    % (address, name))
         return temp.wif
 
-    @classmethod
-    def get_utxo(cls, address: str, chain: Blockchain) -> int:
-        """
-        获取用户 UTXO。
+    # @classmethod
+    # def get_utxo(cls, address: str, chain: Blockchain) -> int:
+    #     """
+    #     获取用户 UTXO。
 
-        :param address: 用户地址
-        :param chain: 区块链
-        :return: 对应用户 UTXO
-        """
-        ans = 0
-        for eachBlock in chain.blockList:
-            for eachTransaction in eachBlock.data:
-                for eachOut in eachTransaction.outList:
-                    if eachOut.script == address and eachOut.isUsed is False:
-                        ans += eachOut.value
-        return ans
+    #     :param address: 用户地址
+    #     :param chain: 区块链
+    #     :return: 对应用户 UTXO
+    #     """
+    #     ans = 0
+    #     for eachBlock in chain.blockList:
+    #         for eachTransaction in eachBlock.data:
+    #             for eachOut in eachTransaction.outList:
+    #                 if eachOut.script == address and eachOut.isUsed is False:
+    #                     ans += eachOut.value
+    #     return ans
