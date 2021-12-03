@@ -21,10 +21,10 @@ class User(object):
         self.private_key = ECDSA.get_private_key_from_wif(self.wif)
         self.public_key = ECDSA.get_public_key_from_private_key(
             self.private_key)
-        compressed_public_key = ECDSA.get_compressed_public_key_from_public_key(
+        self.compressed_public_key = ECDSA.get_compressed_public_key_from_public_key(
             self.public_key)
         self.address = self.menu.get_address_from_compressed_public_key(
-            compressed_public_key)
+            self.compressed_public_key)
         # logging.debug("成功创建用户(wif='" + input_wif + "')。")
 
     @classmethod
@@ -50,10 +50,10 @@ class User(object):
         else:
             name = 'NULL'
         db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
-        db.execute("insert \
-                    into 店铺 \
-                    values('%s', %s)" \
-                    % (address, name))
+        # db.execute("insert \
+        #             into 店铺 \
+        #             values('%s', %s)" \
+        #             % (address, name))
         return temp.wif
 
     # @classmethod
@@ -72,3 +72,7 @@ class User(object):
     #                 if eachOut.script == address and eachOut.isUsed is False:
     #                     ans += eachOut.value
     #     return ans
+
+# 待完成的功能函数
+# 用户余额更新；用户开店；应用上架；应用下架；用户关店；
+# 购买应用程序

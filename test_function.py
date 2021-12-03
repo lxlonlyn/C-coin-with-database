@@ -32,16 +32,10 @@ if __name__ == '__main__':
     bright = user.User(bright_wif)
     lonlyn = user.User(lonlyn_wif)
     # 挖两个区块
-    function.dig_source(bright.address)
-    function.dig_source(lonlyn.address)
+    function.dig_source(bright.compressed_public_key)
+    function.dig_source(lonlyn.compressed_public_key)
     # 两人交易
-    function.make_deal(bright, lonlyn.address, 10)
+    function.make_deal(bright, lonlyn.compressed_public_key, 10)
     # 打包这个交易
-    function.dig_source(bright.address)
-
-
-
-
-
-
+    function.dig_source(bright.compressed_public_key)
 
