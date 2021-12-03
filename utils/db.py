@@ -107,8 +107,10 @@ class DB(object):
         )
         self.execute(
             "CREATE TABLE IF NOT EXISTS 店铺 (\
-                收款地址 VARCHAR(100) PRIMARY KEY,\
-                店铺名称 VARCHAR(100)\
+                店铺编号 VARCHAR(100) PRIMARY KEY,\
+                店铺名称 VARCHAR(100), \
+                公钥 VARCHAR(100), \
+                FOREIGN KEY (公钥) REFERENCES 用户(公钥) \
             )"
         )
         self.execute(
@@ -117,8 +119,10 @@ class DB(object):
                 花费标志 boolean,\
                 数额 FLOAT,\
                 交易哈希 VARCHAR(100), \
+                公钥 VARCHAR(100), \
                 收款地址 VARCHAR(100),\
-                FOREIGN KEY (收款地址) REFERENCES 店铺(收款地址)\
+                FOREIGN KEY (交易哈希) REFERENCES 交易(交易哈希), \
+                FOREIGN KEY (公钥) REFERENCES 用户(公钥) \
             )"
         )
         self.execute(
@@ -129,7 +133,7 @@ class DB(object):
                 公钥 VARCHAR(100),\
                 FOREIGN KEY (输出哈希) REFERENCES 输出(输出哈希),\
                 FOREIGN KEY (交易哈希) REFERENCES 交易(交易哈希),\
-                FOREIGN KEY (公钥) REFERENCES 用户(公钥)\
+                FOREIGN KEY (公钥) REFERENCES 用户(公钥) \
             )"
         )
         self.execute(
@@ -141,21 +145,21 @@ class DB(object):
                 使用系统 VARCHAR(100),\
                 价格 FLOAT,\
                 销量 INT,\
-                收款地址 VARCHAR(100),\
-                FOREIGN KEY (收款地址) REFERENCES 店铺(收款地址)\
+                店铺编号 VARCHAR(100),\
+                FOREIGN KEY (店铺编号) REFERENCES 店铺(店铺编号)\
             )"
         )
-        self.execute(
-            "CREATE TABLE IF NOT EXISTS 购买 (\
-                公钥 VARCHAR(100),\
-                收款地址 VARCHAR(100),\
-                应用编号 VARCHAR(100),\
-                PRIMARY KEY (公钥,收款地址,应用编号),\
-                FOREIGN KEY (公钥) REFERENCES 用户(公钥),\
-                FOREIGN KEY (收款地址) REFERENCES 店铺(收款地址),\
-                FOREIGN KEY (应用编号) REFERENCES 应用程序(应用编号)\
-            )"
-        )
+        # self.execute(
+        #     "CREATE TABLE IF NOT EXISTS 购买 (\
+        #         公钥 VARCHAR(100),\
+        #         收款地址 VARCHAR(100),\
+        #         应用编号 VARCHAR(100),\
+        #         PRIMARY KEY (公钥,收款地址,应用编号),\
+        #         FOREIGN KEY (公钥) REFERENCES 用户(公钥),\
+        #         FOREIGN KEY (收款地址) REFERENCES 店铺(收款地址),\
+        #         FOREIGN KEY (应用编号) REFERENCES 应用程序(应用编号)\
+        #     )"
+        # )
         self.execute(
             "CREATE TABLE IF NOT EXISTS 库存 (\
                 公钥 VARCHAR(100),\

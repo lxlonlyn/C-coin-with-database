@@ -8,13 +8,14 @@ from utils.ecdsa import ECDSA
 from utils.sha256 import my_sha256
 import time
 
-def make_deal(user: User, receive_address: str, value: float) -> any:
+def make_deal(user: User, receive_compressed_public_key: str, value: float) -> any:
     '''
     这个函数是构建交易
     :param user: 是交易的发起者，User类
     :param receive_address: 是收款方的钱包地址
     :param value: 交易的数额
     '''
+    receive_address = ECDSA.get_address_from_compressed_public_key(receive_compressed_public_key)
     # 第一步，找属于该用户的输出
     db = DB("localhost", _passwd = "csnb")
     available_out: Tuple = db.select(
@@ -102,30 +103,45 @@ def make_deal(user: User, receive_address: str, value: float) -> any:
                 values('%s', '%s', '%s', '%s')" \
                     % (each[0], each[1], transaction_hash, each[2]))
     # 输出进入数据库
+    # 由于输出与用户存在多对一对应关系，所以输出中需要存储用户的公钥
+    # 先在用户的表中，找到目前收款地址的对应公钥
     db.execute(
         "insert \
         into 输出 \
-        values('%s', 0, '%s', '%s', '%s')" \
-        % (out_hash_to_target, value, transaction_hash ,receive_address)
+        values('%s', 0, '%s', '%s', '%s', '%s')" \
+        % ( \
+            out_hash_to_target, \
+            value, \
+            transaction_hash , \
+            receive_compressed_public_key , \
+            receive_address \
+        )
     )
     if tot != value:
         db.execute(
                 "insert \
                 into 输出 \
-                values('%s', 0, '%s', '%s', '%s')" \
-                % (out_hash_to_sender, tot - value, transaction_hash, user.address)
+                values('%s', 0, '%s', '%s', '%s', '%s')" \
+                % (out_hash_to_sender, \
+                    tot - value, \
+                    transaction_hash, \
+                    ECDSA.get_compressed_public_key_from_public_key(user.public_key), \
+                    user.address)
         )
 
 
-def dig_source(minner_address: str) -> str:
+def dig_source(minner_compressed_public_key: str) -> str:
     '''
     该函数用来生成新区块，同时对 未确认的交易 进行打包
     即所谓的挖矿操作
 
-    :param minner_address: 挖矿的矿工地址
+    :param minner_public_key: 挖矿的矿工地址
 
     函数返回新区块的区块哈希
     '''
+    minner_address = ECDSA.get_address_from_compressed_public_key(
+        minner_compressed_public_key)
+
     db = DB("localhost", _passwd = "csnb")
 
     # 第一步，创建coinbase交易，即矿工给自己的挖矿奖励50个币
@@ -141,8 +157,8 @@ def dig_source(minner_address: str) -> str:
     db.execute(
         "insert \
         into 输出 \
-        values('%s', 0, '%s', '%s', '%s')" \
-        % (coinbase, 50, coinbase, minner_address)
+        values('%s', 0, '%s', '%s', '%s', '%s')" \
+        % (coinbase, 50, coinbase, minner_compressed_public_key, minner_address)
     )
 
     # 第二步，寻找要打包的交易
