@@ -352,6 +352,18 @@ def put_on_shelves(
     store_index:str, 
     db:DB):
 
+    '''
+    该函数实现某个店铺应用上架
+
+    :param app_name: 应用名称
+    :param app_size: 应用大小
+    :param app_version: 应用版本
+    :param app_system: 应用使用的操作系统
+    :param app_price: 应用价格
+    :param store_index: 应用编号
+    :param db: 操作的数据库
+    '''
+
     # 首先，计算该应用的编号
     app_index = db.select(
         "select count(应用编号) \
@@ -370,6 +382,13 @@ def put_on_shelves(
     )
 
 def buy_app(user: User, app_index:str , db:DB):
+    '''
+    该函数实现顾客购买app
+
+    :param user: 顾客类
+    :param app_index: 购买的应用程序的编号
+    :param db: 操作的数据库
+    '''
     # 首先，找到应用程序的价格和收款公钥
     tmp = db.select(
         "select 价格, 店铺编号 \
