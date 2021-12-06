@@ -6,16 +6,23 @@ from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget, QFormLayout, QLi
 from GUI import BlockWidget
 from blockchain.block import Block, Blockchain
 from blockchain.user import User
-from blockchain.transaction import make_deal
+# from blockchain.transaction import make_deal
 from utils.db import DB
 from utils.ecdsa import ECDSA
 import logging
 from functools import partial
+from blockchain.function import make_deal, dig_source, create_user
 
 
 class MainWindow(QTabWidget):
-    def __init__(self):
+    def __init__(self, db: DB):
         super().__init__()
+
+        # 存储信息定义
+        self.db = db
+        self.all_user = []  # type: list[User]
+        self.blockchain = Blockchain()
+
         # 主界面
         self.setWindowTitle("C coin——全新的数字货币")
         self.resize(1200, 800)
@@ -45,11 +52,7 @@ class MainWindow(QTabWidget):
         self.le_address = QLineEdit()
         self.le_number = QLineEdit()
 
-        # 存储信息
-        self.all_user = []  # type: list[User]
-        self.blockchain = Blockchain()
-
-        # 执行初始化操作
+        # 初始化操作
         self.func()
 
     def func(self):
@@ -67,6 +70,9 @@ class MainWindow(QTabWidget):
         self.set_tab4_ui()
 
     def set_tab1_ui(self):
+        """
+            tab1：欢迎界面
+        """
         layout = QVBoxLayout()
         wel = QLabel()
         wel.setText("欢迎使用 C-coin 系统")
@@ -86,10 +92,15 @@ class MainWindow(QTabWidget):
         self.timer.start(1000)
 
     def clock_update(self):
+        """
+            tab1：更新时钟
+        """
         self.time.setText(QTime.currentTime().toString())
 
     def set_tab2_ui(self):
-
+        """
+            tab2：区块信息页面:
+        """
         # 左侧：区块链显示
         self.blocksBox.setMinimumSize(
             750, max(800, 20 + len(self.blockchain.blockList) * 215))
@@ -109,35 +120,53 @@ class MainWindow(QTabWidget):
         btn_createBlock.setFixedSize(200, 80)
         btn_createBlock.move(45, 50)
         self.tab2_layout.addWidget(buttonBox, 1)
+        self.block_widget.setLayout(self.tab2_layout)
+        self.blcokList = []
 
         btn_createBlock.clicked.connect(self.create_block_clicked)
-
-        self.block_widget.setLayout(self.tab2_layout)
+        self.timer.timeout.connect(self.blocksbox_update)
 
     def blocksbox_update(self):
-        self.new_blocksBox = QWidget()
-        self.new_blocksBox.setMinimumSize(
-            750, max(800, 20 + len(self.blockchain.blockList) * 215))
+        """
+            tab2：更新左侧区块展示
+        """
+        self.blockList = self.db.select("SELECT * FROM 区块 ORDER BY 时间戳;", True)
+        self.blocksBox = QWidget()
+        self.blocksBox.setMinimumSize(
+            750, max(800, 20 + len(self.blockList) * 215))
 
-        for i in range(len(self.blockchain.blockList)):
-            block = self.blockchain.blockList[i]
+        for i in range(len(self.blockList)):
+            block = self.blockList[i]
             a = BlockWidget.QBlockWidget()
-            a.setParent(self.new_blocksBox)
+            a.setParent(self.blocksBox)
             a.move(0, 10 + i * 215)
-            a.set_hash(block.blockHash)
-            a.set_time(str(block.timeStamp))
-            a.set_prehash(block.preHash)
-            a.set_merkle(block.merkleHash)
+            a.set_hash(block[0])
+            a.set_time(str(block[3]))
+            a.set_prehash(block[1])
+            a.set_merkle(block[2])
 
-        self.blocksBox = self.new_blocksBox
+        self.blocksBox.update()
+        oldval = self.block_scroll.verticalScrollBar().value()
+        oldmaxval = self.block_scroll.verticalScrollBar().maximum()
         self.block_scroll.setMinimumWidth(750)
         self.block_scroll.setWidget(self.blocksBox)
+        if oldmaxval == 0:
+            self.block_scroll.verticalScrollBar().setValue(0)
+        else:
+            self.block_scroll.verticalScrollBar().setValue(
+                oldval * self.block_scroll.verticalScrollBar().maximum() / oldmaxval)
 
     def set_blockchain(self, new_blockchain):
+        """
+            设置区块链
+        """
         self.blockchain = new_blockchain
         self.blocksbox_update()
 
     def add_block(self, new_block: Block) -> None:
+        """
+            添加新区块
+        """
         self.blockchain.add_block(new_block)
         self.blocksbox_update()
 
@@ -145,8 +174,9 @@ class MainWindow(QTabWidget):
         input_address, okPressed = QInputDialog.getText(
             self, "确认打工人", "请输入打工人的地址", QLineEdit.Normal, "")
         found = -1
-        for i in range(len(self.all_user)):
-            if self.all_user[i].address == input_address:
+        all_user = self.db.select("SELECT * FROM 用户;")
+        for i in range(len(all_user)):
+            if ECDSA.get_address_from_compressed_public_key(all_user[i][0]) == input_address:
                 found = i
                 break
         if found == -1:
@@ -155,15 +185,19 @@ class MainWindow(QTabWidget):
             logging.info("已找到对应用户，正在创建区块")
         if okPressed:
             if found != -1:
+                dig_source(all_user[found][0], self.db)
                 QMessageBox.information(self, "新区块已创立", "好耶，是新区块！", QMessageBox.Yes | QMessageBox.No,
                                         QMessageBox.Yes)
-                self.add_block(Block(input_address))
+                # self.add_block(Block(input_address))
                 self.usersbox_update()
             else:
                 QMessageBox.information(self, "新区块创立失败", "随便输一个可是过不了的 ╮(╯▽╰)╭ ", QMessageBox.Yes | QMessageBox.No,
                                         QMessageBox.Yes)
 
     def set_tab3_ui(self):
+        """
+            tab3：用户界面
+        """
         # 左侧：User 显示
 
         self.user_scroll.setAlignment(Qt.AlignCenter)
@@ -252,6 +286,9 @@ class MainWindow(QTabWidget):
         self.account_widget.setLayout(self.tab3_layout)
 
     def create_user_clicked(self):
+        """
+            tab3：点击创建用户事件
+        """
         _name, ok = QInputDialog.getText(self, "输入名字", "请输入用户姓名")
         if not ok:
             logging.info("用户取消创建")
@@ -263,7 +300,7 @@ class MainWindow(QTabWidget):
                 self, "用户名格式错误", "用户名只能包含连续的字母数字段，每段以一个空格隔开。\n用户名不能为空。")
             return
 
-        new_user = User(User.create_user(_name))
+        new_user = User(create_user(_name, self.db))
         info = QMessageBox(self)
         info.setIcon(QMessageBox.Icon.Information)
         info.setWindowTitle("新用户已创立")
@@ -280,7 +317,9 @@ class MainWindow(QTabWidget):
         logging.info("创建用户完毕。")
 
     def usersbox_update(self, info: str = "", pub: str = "", money: tuple = (0, 1e18)):
-        db = DB("localhost", _passwd="csnb")
+        """
+            tab3：更新用户框
+        """
         sql = "SELECT * FROM 用户 WHERE 用户名 LIKE '" + info + "%'"
         sql += "AND 公钥 LIKE '" + pub + "%'"
         if money[0] == "":
@@ -288,8 +327,7 @@ class MainWindow(QTabWidget):
         if money[1] == "":
             money = (money[0], 1e18)
         sql += "AND 余额 BETWEEN " + str(money[0]) + " AND " + str(money[1])
-        logging.debug("执行 SQL：{}".format(sql))
-        users = db.select(sql, True)
+        users = self.db.select(sql, True)
 
         self.usersBox = QWidget()
         self.usersBox.setMinimumSize(
@@ -306,6 +344,7 @@ class MainWindow(QTabWidget):
             money = users[i][2]
             name = users[i][1]
             if not isinstance(name, str):
+                logging.warning("地址为{}的用户没有对应用户名，以default替代".format(addr))
                 name = "default"
             self.frame_list.append(QFrame())
             self.frame_list[i].setParent(self.usersBox)
@@ -356,7 +395,18 @@ class MainWindow(QTabWidget):
             self.user_scroll.verticalScrollBar().setValue(
                 oldval * self.user_scroll.verticalScrollBar().maximum() / oldmaxval)
 
+    def bn_copy_clicked(self, ele: str) -> None:
+        """
+            tab3：复制按钮点击事件
+        """
+        ele = ele.split('：')[1]
+        clipboard = QApplication.clipboard()
+        clipboard.setText(ele)
+
     def set_tab4_ui(self):
+        """
+            tab4：交易页面
+        """
         btn_deal = QPushButton()
         btn_deal.setText("点我进行交易")
         btn_deal.clicked.connect(self.deal_clicked)
@@ -368,6 +418,9 @@ class MainWindow(QTabWidget):
         self.deal_widget.setLayout(self.tab4_layout)
 
     def deal_clicked(self):
+        """
+            tab4：点击交易事件
+        """
         occurred = False
         for u in self.all_user:
             if u.wif == self.le_wif.text():
@@ -392,8 +445,3 @@ class MainWindow(QTabWidget):
                       int(self.le_number.text(), 10), self.blockchain)
             self.blocksbox_update()
             self.usersbox_update()
-
-    def bn_copy_clicked(self, ele) -> None:
-        ele = ele.split('：')[1]
-        clipboard = QApplication.clipboard()
-        clipboard.setText(ele)
