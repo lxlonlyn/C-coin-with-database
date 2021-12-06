@@ -1,7 +1,7 @@
 import blockchain
 import GUI
-from blockchain import user
 from utils import ecdsa
+from blockchain import user
 import utils.db
 from utils.ecdsa import ECDSA
 from blockchain import function
@@ -10,7 +10,7 @@ from blockchain import function
 '''
 if __name__ == '__main__':
     # 连接数据库
-    db = utils.db.DB("localhost", _passwd = 'csnb')
+    db = utils.db.DB("localhost", _passwd='csnb')
     # 建表
     db.create_tables(rebuild=True)
     # 创建两个用户
@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # bright = user.User.create_user(bright_wif)
 
     # 创建两个用户
-    bright_wif = user.User.create_user('bright')
-    lonlyn_wif = user.User.create_user('lonlyn')
+    bright_wif = function.create_user('bright', db)
+    lonlyn_wif = function.create_user('lonlyn', db)
     bright = user.User(bright_wif)
     lonlyn = user.User(lonlyn_wif)
     # 挖两个区块

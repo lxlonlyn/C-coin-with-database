@@ -64,6 +64,7 @@ class DB(object):
             self.conn.commit()
         except Exception as e:
             # 回滚所有更改
+            print(inst)
             self.conn.rollback()
             logging.warning("执行SQL出现错误：{}".format(e))
 

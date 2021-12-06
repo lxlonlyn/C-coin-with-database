@@ -28,36 +28,36 @@ class User(object):
             self.compressed_public_key)
         # logging.debug("成功创建用户(wif='" + input_wif + "')。")
 
-    @classmethod
-    def create_user(cls, _name="") -> str:
-        """
-        创建用户。
+    # @classmethod
+    # def create_user(cls, _name="") -> str:
+    #     """
+    #     创建用户。
 
-        :return: 用户的压缩私匙
-        """
-        temp = ECDSA()
-        # 首先，由于 ECDSA 中生成的公钥和私钥为 int 类型，为了 wif 的成功生成，将私钥变为 64 位的 16 进制字符串
-        temp.private_key = hex(temp.private_key)[2:]
-        temp.private_key = '0' * \
-            (64 - len(temp.private_key)) + temp.private_key
-        # 下面计算 wif 和 address
-        temp.wif = temp.get_wif_from_private_key(temp.private_key)
-        db = DB("localhost", _passwd="csnb")
-        info = ECDSA.get_compressed_public_key_from_public_key(
-            ECDSA.get_public_key_from_private_key(temp.private_key))
-        address = ECDSA.get_address_from_compressed_public_key(info)
-        if _name != '':
-            name = "'" + _name + "'"
-        else:
-            name = 'NULL'
-        # db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
-        logging.debug(
-            "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
-        # db.execute("insert \
-        #             into 店铺 \
-        #             values('%s', %s)" \
-        #             % (address, name))
-        return temp.wif
+    #     :return: 用户的压缩私匙
+    #     """
+    #     temp = ECDSA()
+    #     # 首先，由于 ECDSA 中生成的公钥和私钥为 int 类型，为了 wif 的成功生成，将私钥变为 64 位的 16 进制字符串
+    #     temp.private_key = hex(temp.private_key)[2:]
+    #     temp.private_key = '0' * \
+    #         (64 - len(temp.private_key)) + temp.private_key
+    #     # 下面计算 wif 和 address
+    #     temp.wif = temp.get_wif_from_private_key(temp.private_key)
+    #     db = DB("localhost", _passwd="csnb")
+    #     info = ECDSA.get_compressed_public_key_from_public_key(
+    #         ECDSA.get_public_key_from_private_key(temp.private_key))
+    #     address = ECDSA.get_address_from_compressed_public_key(info)
+    #     if _name != '':
+    #         name = "'" + _name + "'"
+    #     else:
+    #         name = 'NULL'
+    #     # db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+    #     logging.debug(
+    #         "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+    #     # db.execute("insert \
+    #     #             into 店铺 \
+    #     #             values('%s', %s)" \
+    #     #             % (address, name))
+    #     return temp.wif
 
     # @classmethod
     # def get_utxo(cls, address: str, chain: Blockchain) -> int:
