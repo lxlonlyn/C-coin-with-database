@@ -34,6 +34,7 @@ class DB(object):
         try:
             # 断线重连
             self.conn.ping(reconnect=True)
+            logging.debug("执行SQL: " + inst)
             self.cursor.execute(inst)
             res = self.cursor.fetchall()
             if format:
@@ -45,7 +46,7 @@ class DB(object):
                 return res
 
         except Exception as e:
-            logging.warning("SQL 语句执行错误：{}".format(e))
+            logging.warning("查询SQL错误：{}".format(e))
             # print("出现错误：{}".format(e))
             return []
 
@@ -58,12 +59,13 @@ class DB(object):
         try:
             # 断线重连
             self.conn.ping(reconnect=True)
+            logging.debug("执行SQL: " + inst)
             self.cursor.execute(inst)
             self.conn.commit()
         except Exception as e:
             # 回滚所有更改
             self.conn.rollback()
-            print("出现错误：{}".format(e))
+            logging.warning("执行SQL出现错误：{}".format(e))
 
     def create_tables(self, rebuild: bool = False):
         """

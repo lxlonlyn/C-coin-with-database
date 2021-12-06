@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import logging
 from PyQt5.QtWidgets import QInputDialog
 from utils.db import DB
 from utils.ecdsa import ECDSA
@@ -49,7 +50,9 @@ class User(object):
             name = "'" + _name + "'"
         else:
             name = 'NULL'
-        db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+        # db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+        logging.debug(
+            "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
         # db.execute("insert \
         #             into 店铺 \
         #             values('%s', %s)" \
