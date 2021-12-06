@@ -10,12 +10,14 @@ import time
 import logging
 
 
+
 def make_deal(user: User, receive_compressed_public_key: str, value: float, db: DB) -> any:
     '''
     这个函数是构建交易
     :param user: 是交易的发起者，User类
     :param receive_address: 是收款方的钱包地址
     :param value: 交易的数额
+    :param db:操作的数据库
     '''
     receive_address = ECDSA.get_address_from_compressed_public_key(
         receive_compressed_public_key)
@@ -136,12 +138,14 @@ def make_deal(user: User, receive_compressed_public_key: str, value: float, db: 
         )
 
 
+
 def dig_source(minner_compressed_public_key: str, db: DB) -> str:
     '''
     该函数用来生成新区块，同时对 未确认的交易 进行打包
     即所谓的挖矿操作
 
     :param minner_public_key: 挖矿的矿工地址
+    :param db：操作的数据库
 
     函数返回新区块的区块哈希
     '''
@@ -294,6 +298,142 @@ def dig_source(minner_compressed_public_key: str, db: DB) -> str:
     )
     return block_hash
 
+def update_uxto(user_compressed_public_key:str, db:DB) -> float:
+    '''
+    该函数计算一个用户的当前最新余额
+    并返回该余额
+
+    :param user_compressed_public_key:顾名思义，所查用户的压缩公钥
+    :param db:操作的数据库
+    '''
+    out_of_user = db.select(
+        "select 数额 \
+        from 输出 \
+        where 公钥 = '%s' and 花费标志 = 0" \
+        % user_compressed_public_key
+    )
+    tot:float = 0
+    for each in out_of_user:
+        tot = tot + each[0]
+    return tot
+
+def open_a_store(user_compressed_public_key:str, store_name:str, db:DB):
+    '''
+    该函数 给某个用户开一个新店铺
+
+    :param user_compressed_public_key:开店用户的压缩公钥
+    :param store_name:店铺的名称
+    :param db:操作的数据库
+    '''
+    cur_store_num = db.select(
+        "select count(店铺编号) \
+        from 店铺"
+    )[0][0]
+
+    store_index = str(cur_store_num + 1)
+    store_index = (4 - len(store_index)) * '0' + store_index
+
+    db.execute(
+        "insert \
+        into 店铺 \
+        values('%s', '%s', '%s')" \
+        % (store_index, store_name, user_compressed_public_key)
+    )
+
+def change_store_name(store_index:str, new_name:str, db:DB):
+    '''
+    该函数修改店铺的名称
+
+    :param store_index:操作的店铺编号
+    :param new_name:新名称
+    :param db:操作的数据库
+    '''
+    db.execute(
+        "update 店铺 \
+        set 店铺名称 = '%s' \
+        where 店铺编号 = '%s' " \
+        % (new_name, store_index)
+    )
+
+def put_on_shelves(
+    app_name:str, 
+    app_size:str, 
+    app_version:str, 
+    app_system:str, 
+    app_price:float, 
+    store_index:str, 
+    db:DB):
+
+    '''
+    该函数实现某个店铺应用上架
+
+    :param app_name: 应用名称
+    :param app_size: 应用大小
+    :param app_version: 应用版本
+    :param app_system: 应用使用的操作系统
+    :param app_price: 应用价格
+    :param store_index: 应用编号
+    :param db: 操作的数据库
+    '''
+
+    # 首先，计算该应用的编号
+    app_index = db.select(
+        "select count(应用编号) \
+        from 应用程序"
+    )[0][0] + 1
+    app_index = str(app_index)
+    app_index = (4 - len(app_index)) * '0' + app_index
+
+    # 插入数据库
+    db.execute(
+        "insert \
+        into 应用程序 \
+        values('%s', '%s', '%s', '%s', '%s', '%s', 0, '%s')" \
+        % (app_index, app_name, app_size, app_version, \
+            app_system, app_price, store_index)
+    )
+
+def buy_app(user: User, app_index:str , db:DB):
+    '''
+    该函数实现顾客购买app
+
+    :param user: 顾客类
+    :param app_index: 购买的应用程序的编号
+    :param db: 操作的数据库
+    '''
+    # 首先，找到应用程序的价格和收款公钥
+    tmp = db.select(
+        "select 价格, 店铺编号 \
+        from 应用程序 \
+        where 应用编号 = '%s'"
+        % app_index
+    )
+    value = tmp[0][0]
+    receive_compressed_public_key = db.select(
+        "select 公钥 \
+        from 店铺 \
+        where 店铺编号 = '%s'"
+        % tmp[0][1]
+    )[0][0]
+    # 先进行交易
+    deal = make_deal(user, receive_compressed_public_key, value, db)
+    # 如果钱不够，操作终止
+    if isinstance(deal, int) and deal == -1:
+        return -1
+    # 修改应用程序的销量
+    db.execute(
+        "update 应用程序 \
+        set 销量 = 销量 + 1 \
+        where 应用编号 = '%s'"
+        % app_index
+    )
+    # 更新用户的库存
+    db.execute(
+        "insert \
+        into 库存(公钥, 应用编号) \
+        values('%s', '%s')"
+        % (user.compressed_public_key, app_index)
+    )
 
 def create_user(_name: str, db: DB) -> str:
     """
