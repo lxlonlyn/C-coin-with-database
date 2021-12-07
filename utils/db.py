@@ -31,10 +31,10 @@ class DB(object):
         :param inst: 查询指令
         :param format: 返回格式，若为 True 返回 list，否则为 tuple
         """
+        logging.debug("执行SQL: " + " ".join(inst.split()))
         try:
             # 断线重连
             self.conn.ping(reconnect=True)
-            logging.debug("执行SQL: " + inst)
             self.cursor.execute(inst)
             res = self.cursor.fetchall()
             if format:
@@ -56,10 +56,10 @@ class DB(object):
 
         :param inst: 执行的语句
         """
+        logging.debug("执行SQL: " + " ".join(inst.split()))
         try:
             # 断线重连
             self.conn.ping(reconnect=True)
-            logging.debug("执行SQL: " + inst)
             self.cursor.execute(inst)
             self.conn.commit()
         except Exception as e:

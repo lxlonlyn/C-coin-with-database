@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QDateTime, QLine, QRegExp, Qt, QTime, QTimer
-from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator, QValidator
-from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QGridLayout, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
+from PyQt5.QtCore import QDateTime, QRegExp, Qt, QTime, QTimer
+from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator
+from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog
 from GUI import BlockWidget
-from blockchain.block import Block, Blockchain
 from blockchain.user import User
-# from blockchain.transaction import make_deal
 from utils.db import DB
 from utils.ecdsa import ECDSA
 import logging
 from functools import partial
 from blockchain.function import make_deal, dig_source, create_user
-import time
 
 
 class MainWindow(QTabWidget):
@@ -22,7 +19,6 @@ class MainWindow(QTabWidget):
         # 存储信息定义
         self.db = db
         self.all_user = []  # type: list[User]
-        self.blockchain = Blockchain()
 
         # 主界面
         self.setWindowTitle("C coin——全新的数字货币")
@@ -40,6 +36,7 @@ class MainWindow(QTabWidget):
         self.block_scroll = QScrollArea()
         self.le_time_start = QDateTimeEdit()
         self.le_time_end = QDateTimeEdit()
+        self.blockList = []
 
         # 页面三：账户页面
         self.account_widget = QWidget()
@@ -47,13 +44,11 @@ class MainWindow(QTabWidget):
         self.user_scroll = QScrollArea()
         self.usersBox = QWidget()
         self.new_usersBox = QWidget()
-
-        # 页面四：交易页面
-        self.deal_widget = QWidget()
-        self.tab4_layout = QFormLayout()
-        self.le_wif = QLineEdit()
-        self.le_address = QLineEdit()
-        self.le_number = QLineEdit()
+        self.frame_list = []
+        self.lb_name_list = []
+        self.lb_addr_list = []
+        self.lb_money_list = []
+        self.bn_copy_list = []
 
         # 初始化操作
         self.func()
@@ -62,15 +57,10 @@ class MainWindow(QTabWidget):
         self.addTab(self.welcome_widget, "欢迎页面")
         self.addTab(self.block_widget, "区块信息")
         self.addTab(self.account_widget, "账户信息")
-        self.addTab(self.deal_widget, "交易页面")
-
-        blockchain = Blockchain()
-        self.set_blockchain(blockchain)
 
         self.set_tab1_ui()
         self.set_tab2_ui()
         self.set_tab3_ui()
-        self.set_tab4_ui()
 
     def set_tab1_ui(self):
         """
@@ -105,8 +95,6 @@ class MainWindow(QTabWidget):
             tab2：区块信息页面:
         """
         # 左侧：区块链显示
-        self.blocksBox.setMinimumSize(
-            750, max(800, 20 + len(self.blockchain.blockList) * 215))
         self.block_scroll.setAlignment(Qt.AlignCenter)
         self.block_scroll.setWidget(self.blocksBox)
         self.block_scroll.setFrameShape(QFrame.Box)
@@ -114,12 +102,11 @@ class MainWindow(QTabWidget):
         self.tab2_layout.addWidget(self.block_scroll, 3)
 
         # 右侧：空间按钮
-
         buttonBox = QFrame()
         buttonBox.setFrameShape(QFrame.Box)
         btn_createBlock = QPushButton()
         btn_createBlock.setParent(buttonBox)
-        btn_createBlock.setText("创建新区块")
+        btn_createBlock.setText("挖矿")
         btn_createBlock.setFixedSize(200, 80)
         btn_createBlock.move(45, 50)
         self.tab2_layout.addWidget(buttonBox, 1)
@@ -136,7 +123,6 @@ class MainWindow(QTabWidget):
         lb_time_start.setParent(buttonBox)
         lb_time_start.move(45, 230)
 
-        # self.le_time_start = QDateTimeEdit()
         self.le_time_start.setFixedSize(165, 30)
         self.le_time_start.setParent(buttonBox)
         self.le_time_start.setDisplayFormat("yyyy:MM:dd HH:mm")
@@ -148,7 +134,6 @@ class MainWindow(QTabWidget):
         lb_time_end.setParent(buttonBox)
         lb_time_end.move(45, 280)
 
-        # self.le_time_end = QDateTimeEdit()
         self.le_time_end.setFixedSize(165, 30)
         self.le_time_end.setParent(buttonBox)
         self.le_time_end.setDisplayFormat("yyyy:MM:dd HH:mm")
@@ -157,7 +142,7 @@ class MainWindow(QTabWidget):
         self.le_time_end.move(80, 270)
 
         self.block_widget.setLayout(self.tab2_layout)
-        self.blockList = []
+        self.blockList.clear()
 
         btn_createBlock.clicked.connect(self.create_block_clicked)
         self.timer.timeout.connect(self.blocksbox_update)
@@ -197,23 +182,12 @@ class MainWindow(QTabWidget):
             self.block_scroll.verticalScrollBar().setValue(0)
         else:
             self.block_scroll.verticalScrollBar().setValue(
-                oldval * self.block_scroll.verticalScrollBar().maximum() / oldmaxval)
-
-    def set_blockchain(self, new_blockchain):
-        """
-            设置区块链
-        """
-        self.blockchain = new_blockchain
-        self.blocksbox_update()
-
-    def add_block(self, new_block: Block) -> None:
-        """
-            添加新区块
-        """
-        self.blockchain.add_block(new_block)
-        self.blocksbox_update()
+                oldval * self.block_scroll.verticalScrollBar().maximum() // oldmaxval)
 
     def create_block_clicked(self):
+        """
+            tab2：点击挖矿事件
+        """
         input_address, okPressed = QInputDialog.getText(
             self, "确认打工人", "请输入打工人的地址", QLineEdit.Normal, "")
         found = -1
@@ -247,11 +221,11 @@ class MainWindow(QTabWidget):
         self.user_scroll.setFrameShape(QFrame.Box)
         self.tab3_layout.addWidget(self.user_scroll, 3)
 
-        self.frame_list = []
-        self.lb_name_list = []
-        self.lb_addr_list = []
-        self.lb_money_list = []
-        self.bn_copy_list = []
+        self.frame_list.clear()
+        self.lb_name_list.clear()
+        self.lb_addr_list.clear()
+        self.lb_money_list.clear()
+        self.bn_copy_list.clear()
 
         self.usersbox_update("")
 
@@ -436,7 +410,7 @@ class MainWindow(QTabWidget):
             self.user_scroll.verticalScrollBar().setValue(0)
         else:
             self.user_scroll.verticalScrollBar().setValue(
-                oldval * self.user_scroll.verticalScrollBar().maximum() / oldmaxval)
+                oldval * self.user_scroll.verticalScrollBar().maximum() // oldmaxval)
 
     def bn_copy_clicked(self, ele: str) -> None:
         """
@@ -445,46 +419,3 @@ class MainWindow(QTabWidget):
         ele = ele.split('：')[1]
         clipboard = QApplication.clipboard()
         clipboard.setText(ele)
-
-    def set_tab4_ui(self):
-        """
-            tab4：交易页面
-        """
-        btn_deal = QPushButton()
-        btn_deal.setText("点我进行交易")
-        btn_deal.clicked.connect(self.deal_clicked)
-        self.tab4_layout.addRow("你的压缩私匙 wif：", self.le_wif)
-        self.tab4_layout.addRow("转账对象的地址：", self.le_address)
-        self.tab4_layout.addRow("转账金额：", self.le_number)
-        self.tab4_layout.addRow(btn_deal)
-
-        self.deal_widget.setLayout(self.tab4_layout)
-
-    def deal_clicked(self):
-        """
-            tab4：点击交易事件
-        """
-        occurred = False
-        for u in self.all_user:
-            if u.wif == self.le_wif.text():
-                occurred = True
-                break
-        to_pos = -1
-        for i in range(len(self.all_user)):
-            if self.all_user[i].address == self.le_address.text():
-                to_pos = i
-                break
-        if to_pos == -1 or occurred is False:
-            if not occurred:
-                QMessageBox.information(self, "无法交易", "冒充别人充钱是不好的(￢_￢)。", QMessageBox.Yes | QMessageBox.No,
-                                              QMessageBox.Yes)
-            elif to_pos == -1:
-                QMessageBox.information(self, "无法交易", "请确定你的地址输入正确(￢_￢)。", QMessageBox.Yes | QMessageBox.No,
-                                              QMessageBox.Yes)
-        else:
-            QMessageBox.information(self, "交易成功", "请查看账户来确认完成交易。", QMessageBox.Yes | QMessageBox.No,
-                                          QMessageBox.Yes)
-            make_deal(User(self.le_wif.text()), self.le_address.text(),
-                      int(self.le_number.text(), 10), self.blockchain)
-            self.blocksbox_update()
-            self.usersbox_update()
