@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QLine, QRegExp, Qt, QTime, QTimer
+from PyQt5.QtCore import QDateTime, QLine, QRegExp, Qt, QTime, QTimer
 from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator, QValidator
-from PyQt5.QtWidgets import QApplication, QGridLayout, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
+from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QGridLayout, QWidget, QFormLayout, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog
 from GUI import BlockWidget
 from blockchain.block import Block, Blockchain
@@ -12,6 +12,7 @@ from utils.ecdsa import ECDSA
 import logging
 from functools import partial
 from blockchain.function import make_deal, dig_source, create_user
+import time
 
 
 class MainWindow(QTabWidget):
@@ -37,6 +38,8 @@ class MainWindow(QTabWidget):
         self.tab2_layout = QHBoxLayout()
         self.blocksBox = QWidget()
         self.block_scroll = QScrollArea()
+        self.le_time_start = QDateTimeEdit()
+        self.le_time_end = QDateTimeEdit()
 
         # 页面三：账户页面
         self.account_widget = QWidget()
@@ -120,8 +123,41 @@ class MainWindow(QTabWidget):
         btn_createBlock.setFixedSize(200, 80)
         btn_createBlock.move(45, 50)
         self.tab2_layout.addWidget(buttonBox, 1)
+
+        lb_timeRange = QLabel()
+        lb_timeRange.setText("选择时间区间")
+        lb_timeRange.setParent(buttonBox)
+        lb_timeRange.setFixedSize(200, 20)
+        lb_timeRange.move(45, 180)
+        lb_timeRange.setAlignment(Qt.AlignCenter)
+
+        lb_time_start = QLabel()
+        lb_time_start.setText("从：")
+        lb_time_start.setParent(buttonBox)
+        lb_time_start.move(45, 230)
+
+        # self.le_time_start = QDateTimeEdit()
+        self.le_time_start.setFixedSize(165, 30)
+        self.le_time_start.setParent(buttonBox)
+        self.le_time_start.setDisplayFormat("yyyy:MM:dd HH:mm")
+        self.le_time_start.setCalendarPopup(True)
+        self.le_time_start.move(80, 220)
+
+        lb_time_end = QLabel()
+        lb_time_end.setText("至：")
+        lb_time_end.setParent(buttonBox)
+        lb_time_end.move(45, 280)
+
+        # self.le_time_end = QDateTimeEdit()
+        self.le_time_end.setFixedSize(165, 30)
+        self.le_time_end.setParent(buttonBox)
+        self.le_time_end.setDisplayFormat("yyyy:MM:dd HH:mm")
+        self.le_time_end.setDateTime(QDateTime.currentDateTime())
+        self.le_time_end.setCalendarPopup(True)
+        self.le_time_end.move(80, 270)
+
         self.block_widget.setLayout(self.tab2_layout)
-        self.blcokList = []
+        self.blockList = []
 
         btn_createBlock.clicked.connect(self.create_block_clicked)
         self.timer.timeout.connect(self.blocksbox_update)
@@ -130,7 +166,14 @@ class MainWindow(QTabWidget):
         """
             tab2：更新左侧区块展示
         """
-        self.blockList = self.db.select("SELECT * FROM 区块 ORDER BY 时间戳;", True)
+        time1 = self.le_time_start.dateTime()
+        time1 = time1.toString("yyyy-MM-dd hh:mm:ss")
+        time2 = self.le_time_end.dateTime()
+        time2 = time2.toString("yyyy-MM-dd hh:mm:ss")
+
+        sql = "SELECT * FROM 区块 WHERE 时间戳 BETWEEN '"
+        sql += time1 + "' AND '" + time2 + "' ORDER BY 时间戳;"
+        self.blockList = self.db.select(sql, True)
         self.blocksBox = QWidget()
         self.blocksBox.setMinimumSize(
             750, max(800, 20 + len(self.blockList) * 215))
@@ -321,12 +364,12 @@ class MainWindow(QTabWidget):
             tab3：更新用户框
         """
         sql = "SELECT * FROM 用户 WHERE 用户名 LIKE '" + info + "%'"
-        sql += "AND 公钥 LIKE '" + pub + "%'"
+        sql += " AND 公钥 LIKE '" + pub + "%'"
         if money[0] == "":
             money = (0, money[1])
         if money[1] == "":
             money = (money[0], 1e18)
-        sql += "AND 余额 BETWEEN " + str(money[0]) + " AND " + str(money[1])
+        sql += " AND 余额 BETWEEN " + str(money[0]) + " AND " + str(money[1])
         users = self.db.select(sql, True)
 
         self.usersBox = QWidget()

@@ -13,18 +13,6 @@ if __name__ == '__main__':
     db = utils.db.DB("localhost", _passwd='csnb')
     # 建表
     db.create_tables(rebuild=True)
-    # 创建两个用户
-    # bright_private_key = ECDSA().private_key
-    # '''
-    # 问题：为什么private_key也是个string？
-    # '''
-    # print("我的私钥"+str(bright_private_key))
-    # bright_wif = ECDSA.get_wif_from_private_key(str(bright_private_key))
-    # print("下面用我的wif生成用户")
-    # '''
-    # 问题：用户创建时，要输入的wif为str
-    # '''
-    # bright = user.User.create_user(bright_wif)
 
     # 创建两个用户
     bright_wif = function.create_user('bright', db)
