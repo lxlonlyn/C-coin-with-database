@@ -113,7 +113,7 @@ class DB(object):
                 店铺编号 VARCHAR(100) PRIMARY KEY,\
                 店铺名称 VARCHAR(100), \
                 公钥 VARCHAR(100), \
-                店铺标语 VARCHAR(100), \
+                标语 VARCHAR(100), \
                 FOREIGN KEY (公钥) REFERENCES 用户(公钥) \
             )"
         )

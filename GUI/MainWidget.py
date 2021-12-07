@@ -453,6 +453,7 @@ class MainWindow(QTabWidget):
         self.tab4_layout.addWidget(buttonBox, 1)
 
         self.timer.timeout.connect(self.mallsbox_update)
+        self.mall_widget.setLayout(self.tab4_layout)
 
     def mallsbox_update(self):
         """
@@ -465,10 +466,11 @@ class MainWindow(QTabWidget):
             750, max(800, 20 + len(mallList) * 215))
 
         self.mallframe_list.clear()
+        self.lb_mallname_list.clear()
 
         for i in range(len(mallList)):
             self.mallframe_list.append(QFrame())
-            self.mallframe_list[i].setParent(self.usersBox)
+            self.mallframe_list[i].setParent(self.mallsBox)
             self.mallframe_list[i].setFixedSize(740, 220)
             self.mallframe_list[i].setFrameShape(QFrame.Box)
             self.mallframe_list[i].setContentsMargins(10, 10, 10, 10)
