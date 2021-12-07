@@ -44,11 +44,20 @@ class MainWindow(QTabWidget):
         self.user_scroll = QScrollArea()
         self.usersBox = QWidget()
         self.new_usersBox = QWidget()
-        self.frame_list = []
-        self.lb_name_list = []
-        self.lb_addr_list = []
-        self.lb_money_list = []
-        self.bn_copy_list = []
+        self.userframe_list = []
+        self.lb_username_list = []
+        self.lb_useraddr_list = []
+        self.lb_usermoney_list = []
+        self.bn_useraddr_copy_list = []
+
+        # 页面四：店铺页面
+        self.mall_widget = QWidget()
+        self.tab4_layout = QHBoxLayout()
+        self.mallsBox = QWidget()
+        self.mall_scroll = QScrollArea()
+        self.mallList = []
+        self.mallframe_list = []
+        self.lb_mallname_list = []
 
         # 初始化操作
         self.func()
@@ -57,10 +66,12 @@ class MainWindow(QTabWidget):
         self.addTab(self.welcome_widget, "欢迎页面")
         self.addTab(self.block_widget, "区块信息")
         self.addTab(self.account_widget, "账户信息")
+        self.addTab(self.mall_widget, "店铺信息")
 
         self.set_tab1_ui()
         self.set_tab2_ui()
         self.set_tab3_ui()
+        self.set_tab4_ui()
 
     def set_tab1_ui(self):
         """
@@ -221,11 +232,11 @@ class MainWindow(QTabWidget):
         self.user_scroll.setFrameShape(QFrame.Box)
         self.tab3_layout.addWidget(self.user_scroll, 3)
 
-        self.frame_list.clear()
-        self.lb_name_list.clear()
-        self.lb_addr_list.clear()
-        self.lb_money_list.clear()
-        self.bn_copy_list.clear()
+        self.userframe_list.clear()
+        self.lb_username_list.clear()
+        self.lb_useraddr_list.clear()
+        self.lb_usermoney_list.clear()
+        self.bn_useraddr_copy_list.clear()
 
         self.usersbox_update("")
 
@@ -350,11 +361,11 @@ class MainWindow(QTabWidget):
         self.usersBox.setMinimumSize(
             750, max(800, 20 + len(users) * 215))
 
-        self.frame_list.clear()
-        self.lb_name_list.clear()
-        self.lb_addr_list.clear()
-        self.lb_money_list.clear()
-        self.bn_copy_list.clear()
+        self.userframe_list.clear()
+        self.lb_username_list.clear()
+        self.lb_useraddr_list.clear()
+        self.lb_usermoney_list.clear()
+        self.bn_useraddr_copy_list.clear()
 
         for i in range(len(users)):
             addr = ECDSA.get_address_from_compressed_public_key(users[i][0])
@@ -363,44 +374,44 @@ class MainWindow(QTabWidget):
             if not isinstance(name, str):
                 logging.warning("地址为{}的用户没有对应用户名，以default替代".format(addr))
                 name = "default"
-            self.frame_list.append(QFrame())
-            self.frame_list[i].setParent(self.usersBox)
-            self.frame_list[i].setFixedSize(740, 220)
-            self.frame_list[i].setFrameShape(QFrame.Box)
-            self.frame_list[i].setContentsMargins(10, 10, 10, 10)
-            self.frame_list[i].move(0, 10 + i * 215)
+            self.userframe_list.append(QFrame())
+            self.userframe_list[i].setParent(self.usersBox)
+            self.userframe_list[i].setFixedSize(740, 220)
+            self.userframe_list[i].setFrameShape(QFrame.Box)
+            self.userframe_list[i].setContentsMargins(10, 10, 10, 10)
+            self.userframe_list[i].move(0, 10 + i * 215)
 
-            self.lb_name_list.append(QLabel())
-            self.lb_name_list[i].setText("姓名：" + name)
-            self.lb_name_list[i].setParent(self.frame_list[-1])
-            self.lb_addr_list.append(QLabel())
-            self.lb_addr_list[i].setText("地址：" + addr)
-            self.lb_addr_list[i].setParent(self.frame_list[-1])
-            self.lb_money_list.append(QLabel())
-            self.lb_money_list[i].setText("持有金额：" + str(money))
-            self.lb_money_list[i].setParent(self.frame_list[-1])
+            self.lb_username_list.append(QLabel())
+            self.lb_username_list[i].setText("姓名：" + name)
+            self.lb_username_list[i].setParent(self.userframe_list[-1])
+            self.lb_useraddr_list.append(QLabel())
+            self.lb_useraddr_list[i].setText("地址：" + addr)
+            self.lb_useraddr_list[i].setParent(self.userframe_list[-1])
+            self.lb_usermoney_list.append(QLabel())
+            self.lb_usermoney_list[i].setText("持有金额：" + str(money))
+            self.lb_usermoney_list[i].setParent(self.userframe_list[-1])
             font = QFont("Microsoft YaHei", 10, 60)
-            self.lb_name_list[i].setFont(font)
-            self.lb_addr_list[i].setFont(font)
-            self.lb_money_list[i].setFont(font)
-            self.lb_name_list[i].move(20, 60)
-            self.lb_addr_list[i].move(20, 100)
-            self.lb_money_list[i].move(20, 140)
-            self.lb_addr_list[i].setTextInteractionFlags(
+            self.lb_username_list[i].setFont(font)
+            self.lb_useraddr_list[i].setFont(font)
+            self.lb_usermoney_list[i].setFont(font)
+            self.lb_username_list[i].move(20, 60)
+            self.lb_useraddr_list[i].move(20, 100)
+            self.lb_usermoney_list[i].move(20, 140)
+            self.lb_useraddr_list[i].setTextInteractionFlags(
                 Qt.TextInteractionFlag.TextSelectableByMouse)
 
-            self.bn_copy_list.append(QPushButton())
-            self.bn_copy_list[i].setText("复制")
-            self.bn_copy_list[i].setParent(self.frame_list[-1])
-            self.bn_copy_list[i].setFont(font)
-            self.bn_copy_list[i].move(
-                self.frame_list[i].width() - 120, 100)
+            self.bn_useraddr_copy_list.append(QPushButton())
+            self.bn_useraddr_copy_list[i].setText("复制")
+            self.bn_useraddr_copy_list[i].setParent(self.userframe_list[-1])
+            self.bn_useraddr_copy_list[i].setFont(font)
+            self.bn_useraddr_copy_list[i].move(
+                self.userframe_list[i].width() - 120, 100)
 
         self.usersBox.update()
 
-        for i in range(len(self.bn_copy_list)):
-            self.bn_copy_list[i].clicked.connect(
-                partial(self.bn_copy_clicked, self.bn_copy_list[i].parent().findChildren(QLabel)[1].text()))
+        for i in range(len(self.bn_useraddr_copy_list)):
+            self.bn_useraddr_copy_list[i].clicked.connect(
+                partial(self.bn_copy_clicked, self.bn_useraddr_copy_list[i].parent().findChildren(QLabel)[1].text()))
 
         oldval = self.user_scroll.verticalScrollBar().value()
         oldmaxval = self.user_scroll.verticalScrollBar().maximum()
@@ -419,3 +430,57 @@ class MainWindow(QTabWidget):
         ele = ele.split('：')[1]
         clipboard = QApplication.clipboard()
         clipboard.setText(ele)
+
+    def set_tab4_ui(self):
+        """
+            tab4：店铺页面
+        """
+        # 左侧：店铺显示
+        self.mall_scroll.setAlignment(Qt.AlignCenter)
+        self.mall_scroll.setWidget(self.mallsBox)
+        self.mall_scroll.setFrameShape(QFrame.Box)
+        self.mall_scroll.setMinimumWidth(750)
+        self.tab4_layout.addWidget(self.mall_scroll, 3)
+
+        # 右侧：空间按钮
+        buttonBox = QFrame()
+        buttonBox.setFrameShape(QFrame.Box)
+        btn_createBlock = QPushButton()
+        btn_createBlock.setParent(buttonBox)
+        btn_createBlock.setText("创建新店铺")
+        btn_createBlock.setFixedSize(200, 80)
+        btn_createBlock.move(45, 50)
+        self.tab4_layout.addWidget(buttonBox, 1)
+
+        self.timer.timeout.connect(self.mallsbox_update)
+
+    def mallsbox_update(self):
+        """
+            tab4：更新店铺显示
+        """
+        sql = "SELECT * FROM 店铺 ORDER BY 店铺编号;"
+        mallList = self.db.select(sql, True)
+        self.mallsBox = QWidget()
+        self.mallsBox.setMinimumSize(
+            750, max(800, 20 + len(mallList) * 215))
+
+        self.mallframe_list.clear()
+
+        for i in range(len(mallList)):
+            self.mallframe_list.append(QFrame())
+            self.mallframe_list[i].setParent(self.usersBox)
+            self.mallframe_list[i].setFixedSize(740, 220)
+            self.mallframe_list[i].setFrameShape(QFrame.Box)
+            self.mallframe_list[i].setContentsMargins(10, 10, 10, 10)
+            self.mallframe_list[i].move(0, 10 + i * 215)
+
+        self.mallsBox.update()
+        oldval = self.mall_scroll.verticalScrollBar().value()
+        oldmaxval = self.mall_scroll.verticalScrollBar().maximum()
+        self.mall_scroll.setMinimumWidth(750)
+        self.mall_scroll.setWidget(self.mallsBox)
+        if oldmaxval == 0:
+            self.mall_scroll.verticalScrollBar().setValue(0)
+        else:
+            self.mall_scroll.verticalScrollBar().setValue(
+                oldval * self.mall_scroll.verticalScrollBar().maximum() // oldmaxval)
