@@ -2,14 +2,15 @@
 from PyQt5.QtCore import QDateTime, QRegExp, Qt, QTime, QTimer
 from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator
 from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout, \
-    QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog
+    QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog, QDialog, QFormLayout, \
+    QDialogButtonBox
 from GUI import BlockWidget
 from blockchain.user import User
 from utils.db import DB
 from utils.ecdsa import ECDSA
 import logging
 from functools import partial
-from blockchain.function import make_deal, dig_source, create_user
+from blockchain.function import make_deal, dig_source, create_user, open_a_store
 
 
 class MainWindow(QTabWidget):
@@ -58,6 +59,9 @@ class MainWindow(QTabWidget):
         self.mallList = []
         self.mallframe_list = []
         self.lb_mallname_list = []
+        self.lb_mallslogan_list = []
+        self.bn_mall_customer_list = []
+        self.bn_mall_boss_list = []
 
         # 初始化操作
         self.func()
@@ -445,15 +449,46 @@ class MainWindow(QTabWidget):
         # 右侧：空间按钮
         buttonBox = QFrame()
         buttonBox.setFrameShape(QFrame.Box)
-        btn_createBlock = QPushButton()
-        btn_createBlock.setParent(buttonBox)
-        btn_createBlock.setText("创建新店铺")
-        btn_createBlock.setFixedSize(200, 80)
-        btn_createBlock.move(45, 50)
+        btn_createMall = QPushButton()
+        btn_createMall.setParent(buttonBox)
+        btn_createMall.setText("创建新店铺")
+        btn_createMall.setFixedSize(200, 80)
+        btn_createMall.move(45, 50)
         self.tab4_layout.addWidget(buttonBox, 1)
 
+        btn_createMall.clicked.connect(self.create_mall_clicked)
         self.timer.timeout.connect(self.mallsbox_update)
         self.mall_widget.setLayout(self.tab4_layout)
+
+    def create_mall_clicked(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("创建店铺")
+        dialog.setFixedSize(300, 140)
+        form = QFormLayout(dialog)
+        form.addRow(QLabel(text="请输入您的私钥和店铺期望的名称"))
+        le_pri_key = QLineEdit(dialog)
+        form.addRow(QLabel(text="私钥："), le_pri_key)
+        le_mallname = QLineEdit(dialog)
+        form.addRow(QLabel(text="名称："), le_mallname)
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok, Qt.Horizontal, dialog)
+        form.addRow(buttonBox)
+
+        buttonBox.accepted.connect(dialog.accept)
+        buttonBox.rejected.connect(dialog.rejected)
+
+        fg = dialog.exec()
+
+        if fg == QDialog.Rejected:
+            logging.debug("取消创建店铺")
+
+        if fg == QDialog.Accepted:
+            try:
+                u = User(le_pri_key.text())
+                open_a_store(u.compressed_public_key, le_mallname.text(), self.db)
+            except Exception as e:
+                logging.warning("创建用户失败：{}".format(e))
+                QMessageBox.warning(self, "创建失败", "请检查输入的私钥是否正确")
+
 
     def mallsbox_update(self):
         """
@@ -467,8 +502,13 @@ class MainWindow(QTabWidget):
 
         self.mallframe_list.clear()
         self.lb_mallname_list.clear()
+        self.lb_mallslogan_list.clear()
+        self.bn_mall_customer_list.clear()
+        self.bn_mall_boss_list.clear()
 
         for i in range(len(mallList)):
+            name = mallList[i][1]
+            slogan = mallList[i][3]
             self.mallframe_list.append(QFrame())
             self.mallframe_list[i].setParent(self.mallsBox)
             self.mallframe_list[i].setFixedSize(740, 220)
@@ -476,7 +516,44 @@ class MainWindow(QTabWidget):
             self.mallframe_list[i].setContentsMargins(10, 10, 10, 10)
             self.mallframe_list[i].move(0, 10 + i * 215)
 
+            self.lb_mallname_list.append(QLabel())
+            self.lb_mallname_list[i].setText("店铺名称：" + name)
+            self.lb_mallname_list[i].setParent(self.mallframe_list[-1])
+            self.lb_mallslogan_list.append(QLabel())
+            self.lb_mallslogan_list[i].setText("店铺标语：" + slogan)
+            self.lb_mallslogan_list[i].setParent(self.mallframe_list[-1])
+            font = QFont("Microsoft YaHei", 10, 60)
+            self.lb_mallname_list[i].setFont(font)
+            self.lb_mallslogan_list[i].setFont(font)
+            self.lb_mallname_list[i].move(20, 70)
+            self.lb_mallslogan_list[i].move(20, 130)
+
+            self.bn_mall_customer_list.append(QPushButton())
+            self.bn_mall_customer_list[i].setText("我是顾客")
+            self.bn_mall_customer_list[i].setFixedSize(120, 40)
+            self.bn_mall_customer_list[i].setParent(self.mallframe_list[-1])
+            self.bn_mall_customer_list[i].setFont(font)
+            self.bn_mall_customer_list[i].move(
+                self.mallframe_list[i].width() - 160, 60)
+
+            self.bn_mall_boss_list.append(QPushButton())
+            self.bn_mall_boss_list[i].setText("我是店主")
+            self.bn_mall_boss_list[i].setFixedSize(120, 40)
+            self.bn_mall_boss_list[i].setParent(self.mallframe_list[-1])
+            self.bn_mall_boss_list[i].setFont(font)
+            self.bn_mall_boss_list[i].move(
+                self.mallframe_list[i].width() - 160, 120)
+
         self.mallsBox.update()
+
+        for i in range(len(self.bn_mall_customer_list)):
+            self.bn_mall_customer_list[i].clicked.connect(
+                partial(self.bn_mall_boss_clicked, mallList[i]))
+
+        for i in range(len(self.bn_mall_boss_list)):
+            self.bn_mall_boss_list[i].clicked.connect(
+                partial(self.bn_mall_boss_clicked, mallList[i]))
+
         oldval = self.mall_scroll.verticalScrollBar().value()
         oldmaxval = self.mall_scroll.verticalScrollBar().maximum()
         self.mall_scroll.setMinimumWidth(750)
@@ -486,3 +563,9 @@ class MainWindow(QTabWidget):
         else:
             self.mall_scroll.verticalScrollBar().setValue(
                 oldval * self.mall_scroll.verticalScrollBar().maximum() // oldmaxval)
+
+    def bn_mall_customer_clicked(self, ele):
+        print(ele)
+
+    def bn_mall_boss_clicked(self, ele):
+        print(ele)

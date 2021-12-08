@@ -10,7 +10,6 @@ import time
 import logging
 
 
-
 def make_deal(user: User, receive_compressed_public_key: str, value: float, db: DB) -> any:
     '''
     这个函数是构建交易
@@ -136,7 +135,6 @@ def make_deal(user: User, receive_compressed_public_key: str, value: float, db: 
                    user.public_key),
                user.address)
         )
-
 
 
 def dig_source(minner_compressed_public_key: str, db: DB) -> str:
@@ -298,7 +296,8 @@ def dig_source(minner_compressed_public_key: str, db: DB) -> str:
     )
     return block_hash
 
-def update_uxto(user_compressed_public_key:str, db:DB) -> float:
+
+def update_uxto(user_compressed_public_key: str, db: DB) -> float:
     '''
     该函数计算一个用户的当前最新余额
     并返回该余额
@@ -309,15 +308,16 @@ def update_uxto(user_compressed_public_key:str, db:DB) -> float:
     out_of_user = db.select(
         "select 数额 \
         from 输出 \
-        where 公钥 = '%s' and 花费标志 = 0" \
+        where 公钥 = '%s' and 花费标志 = 0"
         % user_compressed_public_key
     )
-    tot:float = 0
+    tot: float = 0
     for each in out_of_user:
         tot = tot + each[0]
     return tot
 
-def open_a_store(user_compressed_public_key:str, store_name:str, db:DB):
+
+def open_a_store(user_compressed_public_key: str, store_name: str, db: DB):
     '''
     该函数 给某个用户开一个新店铺
 
@@ -336,11 +336,12 @@ def open_a_store(user_compressed_public_key:str, store_name:str, db:DB):
     db.execute(
         "insert \
         into 店铺 \
-        values('%s', '%s', '%s')" \
+        values('%s', '%s', '%s', '店主很懒，什么也没有写')"
         % (store_index, store_name, user_compressed_public_key)
     )
 
-def change_store_name(store_index:str, new_name:str, db:DB):
+
+def change_store_name(store_index: str, new_name: str, db: DB):
     '''
     该函数修改店铺的名称
 
@@ -351,19 +352,19 @@ def change_store_name(store_index:str, new_name:str, db:DB):
     db.execute(
         "update 店铺 \
         set 店铺名称 = '%s' \
-        where 店铺编号 = '%s' " \
+        where 店铺编号 = '%s' "
         % (new_name, store_index)
     )
 
-def put_on_shelves(
-    app_name:str, 
-    app_size:str, 
-    app_version:str, 
-    app_system:str, 
-    app_price:float, 
-    store_index:str, 
-    db:DB):
 
+def put_on_shelves(
+        app_name: str,
+        app_size: str,
+        app_version: str,
+        app_system: str,
+        app_price: float,
+        store_index: str,
+        db: DB):
     '''
     该函数实现某个店铺应用上架
 
@@ -388,12 +389,13 @@ def put_on_shelves(
     db.execute(
         "insert \
         into 应用程序 \
-        values('%s', '%s', '%s', '%s', '%s', '%s', 0, '%s')" \
-        % (app_index, app_name, app_size, app_version, \
-            app_system, app_price, store_index)
+        values('%s', '%s', '%s', '%s', '%s', '%s', 0, '%s')"
+        % (app_index, app_name, app_size, app_version,
+           app_system, app_price, store_index)
     )
 
-def buy_app(user: User, app_index:str , db:DB):
+
+def buy_app(user: User, app_index: str, db: DB):
     '''
     该函数实现顾客购买app
 
@@ -434,6 +436,7 @@ def buy_app(user: User, app_index:str , db:DB):
         values('%s', '%s')"
         % (user.compressed_public_key, app_index)
     )
+
 
 def create_user(_name: str, db: DB) -> str:
     """
