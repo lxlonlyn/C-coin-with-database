@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
+from PyQt5 import QtGui
 from PyQt5.QtCore import QDateTime, QRegExp, Qt, QTime, QTimer
 from PyQt5.QtGui import QDoubleValidator, QFont, QRegExpValidator
 from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QWidget, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog, QDialog, QFormLayout, \
     QDialogButtonBox
 from GUI import BlockWidget
+from GUI.CustomerWidget import QCustomerWidget
 from blockchain.user import User
 from utils.db import DB
 from utils.ecdsa import ECDSA
 import logging
 from functools import partial
-from blockchain.function import make_deal, dig_source, create_user, open_a_store
+from blockchain.function import dig_source, create_user, open_a_store
 
 
 class MainWindow(QTabWidget):
@@ -62,6 +64,7 @@ class MainWindow(QTabWidget):
         self.lb_mallslogan_list = []
         self.bn_mall_customer_list = []
         self.bn_mall_boss_list = []
+        self.customer_widget = QCustomerWidget()
 
         # 初始化操作
         self.func()
@@ -76,6 +79,11 @@ class MainWindow(QTabWidget):
         self.set_tab2_ui()
         self.set_tab3_ui()
         self.set_tab4_ui()
+        self.setCurrentIndex(0)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        self.customer_widget.close()
+        a0.accept()
 
     def set_tab1_ui(self):
         """
@@ -158,6 +166,8 @@ class MainWindow(QTabWidget):
 
         self.block_widget.setLayout(self.tab2_layout)
         self.blockList.clear()
+        self.setCurrentIndex(1)
+        self.blocksbox_update()
 
         btn_createBlock.clicked.connect(self.create_block_clicked)
         self.timer.timeout.connect(self.blocksbox_update)
@@ -166,6 +176,8 @@ class MainWindow(QTabWidget):
         """
             tab2：更新左侧区块展示
         """
+        if self.currentIndex() != 1:
+            return
         time1 = self.le_time_start.dateTime()
         time1 = time1.toString("yyyy-MM-dd hh:mm:ss")
         time2 = self.le_time_end.dateTime()
@@ -242,6 +254,7 @@ class MainWindow(QTabWidget):
         self.lb_usermoney_list.clear()
         self.bn_useraddr_copy_list.clear()
 
+        self.setCurrentIndex(2)
         self.usersbox_update("")
 
         ln_name = QLineEdit()
@@ -352,6 +365,8 @@ class MainWindow(QTabWidget):
         """
             tab3：更新用户框
         """
+        if self.currentIndex() != 2:
+            return
         sql = "SELECT * FROM 用户 WHERE 用户名 LIKE '" + info + "%'"
         sql += " AND 公钥 LIKE '" + pub + "%'"
         if money[0] == "":
@@ -456,6 +471,9 @@ class MainWindow(QTabWidget):
         btn_createMall.move(45, 50)
         self.tab4_layout.addWidget(buttonBox, 1)
 
+        self.setCurrentIndex(3)
+        self.mallsbox_update()
+
         btn_createMall.clicked.connect(self.create_mall_clicked)
         self.timer.timeout.connect(self.mallsbox_update)
         self.mall_widget.setLayout(self.tab4_layout)
@@ -489,11 +507,12 @@ class MainWindow(QTabWidget):
                 logging.warning("创建用户失败：{}".format(e))
                 QMessageBox.warning(self, "创建失败", "请检查输入的私钥是否正确")
 
-
     def mallsbox_update(self):
         """
             tab4：更新店铺显示
         """
+        if self.currentIndex() != 3:
+            return
         sql = "SELECT * FROM 店铺 ORDER BY 店铺编号;"
         mallList = self.db.select(sql, True)
         self.mallsBox = QWidget()
@@ -548,7 +567,7 @@ class MainWindow(QTabWidget):
 
         for i in range(len(self.bn_mall_customer_list)):
             self.bn_mall_customer_list[i].clicked.connect(
-                partial(self.bn_mall_boss_clicked, mallList[i]))
+                partial(self.bn_mall_customer_clicked, mallList[i]))
 
         for i in range(len(self.bn_mall_boss_list)):
             self.bn_mall_boss_list[i].clicked.connect(
@@ -565,7 +584,9 @@ class MainWindow(QTabWidget):
                 oldval * self.mall_scroll.verticalScrollBar().maximum() // oldmaxval)
 
     def bn_mall_customer_clicked(self, ele):
-        print(ele)
+        self.customer_widget.update_info(ele, self.db)
+        self.customer_widget.setCurrentIndex(0)
+        self.customer_widget.show()
 
     def bn_mall_boss_clicked(self, ele):
         print(ele)
