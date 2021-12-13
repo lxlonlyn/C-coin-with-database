@@ -26,4 +26,3 @@ class User(object):
             self.public_key)
         self.address = self.menu.get_address_from_compressed_public_key(
             self.compressed_public_key)
-        logging.debug("成功创建用户(wif='" + input_wif + "')。")
