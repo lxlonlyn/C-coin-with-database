@@ -68,9 +68,9 @@ def make_deal(user: User, receive_compressed_public_key: str, value: float, db: 
 
         # 记录一下该输入的哈希
         input_string = pre_out_hash \
-            + str(sign[0]) \
-            + str(sign[1]) \
-            + str(compressed_public_key)
+                       + str(sign[0]) \
+                       + str(sign[1]) \
+                       + str(compressed_public_key)
         in_out_hash_list.append(my_sha256(input_string))
     # 第四步，构建输出
     # 这一步同样收集一下输出的哈希值，供计算交易哈希使用
@@ -268,7 +268,7 @@ def dig_source(minner_compressed_public_key: str, db: DB) -> str:
         # 检查前7位是否是全0
         seven_digits_are_all_zero: bool = True
         for j in range(0, 2):
-            if(cur_hash[j] != '0'):
+            if (cur_hash[j] != '0'):
                 seven_digits_are_all_zero = False
                 break
         # 如果不满足前 7 位 为 0，那么继续改变 Nonce
@@ -359,7 +359,8 @@ def change_store_name(store_index: str, new_name: str, db: DB):
     )
 
 
-def put_on_shelves(app_name: str, app_size: str, app_version: str, app_system: str, app_price: float, store_index: str, db: DB):
+def put_on_shelves(app_name: str, app_size: str, app_version: str, app_system: str, app_price: float, store_index: str,
+                   db: DB):
     """
     该函数实现某个店铺应用上架
 
@@ -444,7 +445,7 @@ def create_user(_name: str, db: DB) -> str:
     # 为了 wif 的成功生成，将私钥变为 64 位的 16 进制字符串
     temp.private_key = hex(temp.private_key)[2:]
     temp.private_key = '0' * \
-        (64 - len(temp.private_key)) + temp.private_key
+                       (64 - len(temp.private_key)) + temp.private_key
     # 下面计算 wif 和 address
     temp.wif = temp.get_wif_from_private_key(temp.private_key)
     info = ECDSA.get_compressed_public_key_from_public_key(
@@ -457,3 +458,16 @@ def create_user(_name: str, db: DB) -> str:
         "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
     db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
     return temp.wif
+
+
+def update_app_info(app_index: str, app_name: str, app_size: str, app_version: str, app_system: str, app_price: float, db: DB):
+    db.execute("UPDATE 应用程序 SET "
+               "应用名称 = '%s', "
+               "应用大小 = '%s', "
+               "应用版本 = '%s', "
+               "使用系统 = '%s', "
+               "价格 = '%s' "
+               "WHERE 应用编号 = '%s'"
+               % (app_name, app_size, app_version,
+                  app_system, app_price, app_index)
+               )

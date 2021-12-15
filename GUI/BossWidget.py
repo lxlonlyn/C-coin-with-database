@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QTabWidget, QListWidget, QHBoxLayout, QVBoxLayout, QListWidgetItem, QFormLayout, \
     QLineEdit, QPushButton, QLabel, QGridLayout, QMessageBox
 
-from blockchain.function import put_on_shelves
+from blockchain.function import put_on_shelves, update_app_info
 from utils.db import DB
 
 
@@ -137,10 +137,28 @@ class QBossWidget(QTabWidget):
         self.ln_cur_app_system.setFont(font)
         self.ln_cur_app_price.setFont(font)
         self.ln_cur_app_sales.setFont(font)
+        self.ln_cur_app_sales.setEnabled(False)
 
         self.app_name_widget.currentItemChanged.connect(self.app_info_update)
+        self.bn_confirm.clicked.connect(self.update_app_info_clicked)
 
         self.app_widget.setLayout(self.tab2_layout)
+
+    def update_app_info_clicked(self):
+        name = self.ln_cur_app_name.text()
+        size = self.ln_cur_app_size.text()
+        price = self.ln_cur_app_price.text()
+        version = self.ln_cur_app_version.text()
+        system = self.ln_cur_app_system.text()
+        try:
+            update_app_info(self.app_list[self.app_name_widget.currentRow()][0],
+                            name, size, version, system, price, self.db)
+        except Exception as e:
+            QMessageBox.warning(self, "更新失败", "{}".format(e))
+        else:
+            QMessageBox.information(self, "更新成功", "已成功更新应用信息。")
+            self.reset_tab2_ui()
+
 
     def reset_tab2_ui(self):
         if self.db is not None:
@@ -194,6 +212,10 @@ class QBossWidget(QTabWidget):
         self.bn_shelve.clicked.connect(self.app_shelve_clicked)
         self.tab3_layout.addRow(self.bn_shelve)
 
+    def app_info_update_clicked(self):
+
+        pass
+
     def app_shelve_clicked(self):
         name = self.ln_new_app_name.text()
         size = self.ln_new_app_size.text()
@@ -212,3 +234,8 @@ class QBossWidget(QTabWidget):
         else:
             QMessageBox.information(self, "创建成功", "已成功上架应用。")
             self.reset_tab2_ui()
+            self.ln_new_app_name.setText("")
+            self.ln_new_app_size.setText("")
+            self.ln_new_app_price.setText("")
+            self.ln_new_app_system.setText("")
+            self.ln_new_app_version.setText("")
