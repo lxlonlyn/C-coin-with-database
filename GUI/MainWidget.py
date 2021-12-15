@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication, QDateTimeEdit, QWidget, QLineEdit, QPu
     QVBoxLayout, QTabWidget, QMessageBox, QLabel, QFrame, QScrollArea, QInputDialog, QDialog, QFormLayout, \
     QDialogButtonBox
 from GUI import BlockWidget
+from GUI.BossWidget import QBossWidget
 from GUI.CustomerWidget import QCustomerWidget
 from blockchain.user import User
 from utils.db import DB
@@ -65,6 +66,7 @@ class MainWindow(QTabWidget):
         self.bn_mall_customer_list = []
         self.bn_mall_boss_list = []
         self.customer_widget = QCustomerWidget()
+        self.boss_widget = QBossWidget()
 
         # 初始化操作
         self.func()
@@ -83,6 +85,7 @@ class MainWindow(QTabWidget):
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         self.customer_widget.close()
+        self.boss_widget.close()
         a0.accept()
 
     def set_tab1_ui(self):
@@ -589,4 +592,18 @@ class MainWindow(QTabWidget):
         self.customer_widget.show()
 
     def bn_mall_boss_clicked(self, ele):
-        print(ele)
+        pri_key, ok = QInputDialog.getText(
+            self, "确认身份", "请输入您的私钥来确认身份", QLineEdit.Normal, "")
+        try:
+            user = User(pri_key)
+        except Exception as e:
+            QMessageBox.warning(self, "私钥格式错误", "请输入正确格式的私钥。")
+            logging.info("私钥格式错误: {}".format(e))
+        else:
+            if user.compressed_public_key != ele[2]:
+                logging.info("登陆失败: 私钥不匹配")
+                QMessageBox.warning(self, "登录失败", "私钥不匹配，请重新输入。")
+            else:
+                self.boss_widget.update_info(ele, self.db)
+                self.boss_widget.setCurrentIndex(0)
+                self.boss_widget.show()

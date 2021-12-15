@@ -1,15 +1,11 @@
 # -*- coding:utf-8 -*-
-import logging
 class CoinNotEnough(Exception):
-    def __init__(self):
-        logging.warning("比特币余额不足。")
-        pass
+    """
+        余额不足异常。
+    """
 
-class AccessDenied(Exception):
-    def __init__(self):
-        pass
+    def __init__(self, cur_val: float, target_val: float):
+        self.info = "余额不足。目前持有{}，需要{}".format(cur_val, target_val)
 
-class BlockIsOverFlow(Exception):
-    def __init__(self):
-        logging.warning("交易已达上限，需要更多的区块。")
-        pass
+    def __str__(self):
+        return self.info

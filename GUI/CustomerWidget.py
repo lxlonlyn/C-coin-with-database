@@ -7,7 +7,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QTabWidget, QListWidget, QHBoxLayout, QVBoxLayout, QListWidgetItem, QFormLayout, \
     QLabel, QPushButton, QInputDialog, QLineEdit, QMessageBox
 
-from blockchain.function import make_deal
+from blockchain.error import CoinNotEnough
+from blockchain.function import make_deal, buy_app
 from blockchain.user import User
 from utils.db import DB
 
@@ -161,10 +162,13 @@ class QCustomerWidget(QTabWidget):
             self, "确认购买", msg, QLineEdit.Normal, "")
         try:
             user = User(pri_key)
-            make_deal(user, self.comp_pub_key, self.app_list[cur_id][5], self.db)
+            buy_app(user, self.app_list[cur_id][0], self.db)
+        except CoinNotEnough as e:
+            QMessageBox.warning(self, "余额不足", "{}".format(e))
+        except Exception as e:
+            QMessageBox.warning(self, "交易失败", "请检查私钥是否正确。")
+            logging.info("{}".format(e))
+        else:
             logging.info("交易成功")
             QMessageBox.information(self, "交易成功", "交易成功，您已获得此应用！")
-        except Exception as e:
-            QMessageBox.warning(self, "交易失败", "请检查私钥是否正确以及账户余额")
-            logging.info("{}".format(e))
 

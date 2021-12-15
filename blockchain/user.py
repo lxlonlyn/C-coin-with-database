@@ -1,9 +1,5 @@
 # -*- coding:utf-8 -*-
-import logging
-from PyQt5.QtWidgets import QInputDialog
-from utils.db import DB
 from utils.ecdsa import ECDSA
-from blockchain.block import Blockchain
 
 
 class User(object):

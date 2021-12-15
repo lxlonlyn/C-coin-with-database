@@ -31,7 +31,6 @@ class ECDSA(object):
 
     def __init__(self):
         self.private_key = secrets.randbits(256) % ECDSA.p
-        print("private key:", self.private_key)
         self.public_key = ECDSA.curve_mul(ECDSA.g, self.private_key)
 
     @classmethod

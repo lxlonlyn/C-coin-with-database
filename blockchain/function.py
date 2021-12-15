@@ -2,6 +2,8 @@
 暂时把需求功能函数放到这里
 '''
 from typing import List, Tuple
+
+from blockchain.error import CoinNotEnough
 from blockchain.user import User
 from utils.db import DB
 from utils.ecdsa import ECDSA
@@ -37,7 +39,7 @@ def make_deal(user: User, receive_compressed_public_key: str, value: float, db: 
         choosed_out.append(each)
     # 这里判断一下钱是否足够
     if tot < value:
-        return -1
+        raise CoinNotEnough(tot, value)
 
     # 第三步，构建输入
     # 这一步应该收集一下输入的哈希值，因为计算交易哈希时会用到
@@ -342,13 +344,13 @@ def open_a_store(user_compressed_public_key: str, store_name: str, db: DB):
 
 
 def change_store_name(store_index: str, new_name: str, db: DB):
-    '''
+    """
     该函数修改店铺的名称
 
     :param store_index:操作的店铺编号
     :param new_name:新名称
     :param db:操作的数据库
-    '''
+    """
     db.execute(
         "update 店铺 \
         set 店铺名称 = '%s' \
@@ -357,15 +359,8 @@ def change_store_name(store_index: str, new_name: str, db: DB):
     )
 
 
-def put_on_shelves(
-        app_name: str,
-        app_size: str,
-        app_version: str,
-        app_system: str,
-        app_price: float,
-        store_index: str,
-        db: DB):
-    '''
+def put_on_shelves(app_name: str, app_size: str, app_version: str, app_system: str, app_price: float, store_index: str, db: DB):
+    """
     该函数实现某个店铺应用上架
 
     :param app_name: 应用名称
@@ -373,9 +368,9 @@ def put_on_shelves(
     :param app_version: 应用版本
     :param app_system: 应用使用的操作系统
     :param app_price: 应用价格
-    :param store_index: 应用编号
+    :param store_index: 店铺编号
     :param db: 操作的数据库
-    '''
+    """
 
     # 首先，计算该应用的编号
     app_index = db.select(
