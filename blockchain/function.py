@@ -455,8 +455,8 @@ def create_user(_name: str, db: DB) -> str:
     else:
         name = 'NULL'
     logging.debug(
-        "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
-    db.execute("INSERT INTO 用户 VALUES ('%s', %s, 0)" % (info, name))
+        "执行 SQL：" + "INSERT INTO 用户 VALUES ('%s', %s)" % (info, name))
+    db.execute("INSERT INTO 用户 VALUES ('%s', %s)" % (info, name))
     return temp.wif
 
 

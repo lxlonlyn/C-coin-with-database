@@ -370,7 +370,7 @@ class MainWindow(QTabWidget):
         """
         if self.currentIndex() != 2:
             return
-        sql = "SELECT * FROM 用户 WHERE 用户名 LIKE '" + info + "%'"
+        sql = "SELECT 公钥,用户名,余额 FROM 用户信息视图 WHERE 用户名 LIKE '" + info + "%'"
         sql += " AND 公钥 LIKE '" + pub + "%'"
         if money[0] == "":
             money = (0, money[1])
