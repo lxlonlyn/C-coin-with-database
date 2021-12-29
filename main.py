@@ -8,7 +8,7 @@ import logging
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     db = DB("localhost", _passwd="csnb")
-    # db.create_tables(rebuild=True)
+    db.create_tables(rebuild=True)
     app = QApplication(sys.argv)
     window = MainWindow(db)
     window.show()

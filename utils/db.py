@@ -84,6 +84,7 @@ class DB(object):
             self.execute("DROP TABLE IF EXISTS 用户")
             self.execute("DROP TABLE IF EXISTS 交易")
             self.execute("DROP TABLE IF EXISTS 区块")
+            # self.execute("drop table if exists 用户信息视图")
 
         self.execute(
             "CREATE TABLE IF NOT EXISTS 区块 (\
@@ -180,5 +181,6 @@ class DB(object):
             select 用户.用户名, 用户.公钥, SUM(数额)\
             from 用户, 输出 \
             where 用户.公钥 = 输出.公钥 and 花费标志 = 0 \
+            group by 公钥 \
             "
         )
