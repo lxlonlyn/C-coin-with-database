@@ -104,8 +104,7 @@ class DB(object):
         self.execute(
             "CREATE TABLE IF NOT EXISTS 用户 (\
                 公钥 VARCHAR(100) PRIMARY KEY,\
-                用户名 VARCHAR(100),\
-                余额 FLOAT\
+                用户名 VARCHAR(100)\
             )"
         )
         self.execute(
@@ -173,4 +172,13 @@ class DB(object):
                 FOREIGN KEY (公钥) REFERENCES 用户(公钥),\
                 FOREIGN KEY (应用编号) REFERENCES 应用程序(应用编号)\
             )"
+        )
+
+        self.execute(
+            "create view 用户信息视图(用户名,公钥,余额) \
+            as \
+            select 用户.用户名, 用户.公钥, SUM(数额)\
+            from 用户, 输出 \
+            where 用户.公钥 = 输出.公钥 and 花费标志 = 0 \
+            "
         )
