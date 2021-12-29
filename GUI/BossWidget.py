@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple
+import logging
+from typing import Tuple, Any
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
@@ -13,6 +14,14 @@ from utils.db import DB
 class QBossWidget(QTabWidget):
     def __init__(self, info: Tuple[str, str, str, str] = ("", "", "", ""), db: DB = None):
         super().__init__()
+
+        try:
+            with open('GUI/BossWidget.qss', 'r') as f:
+                self.setStyleSheet(f.read())
+            logging.debug("已加载控件样式信息")
+        except Exception as e:
+            logging.warning("控件样式加载失败：{}".format(e))
+
         self.setWindowTitle("修改店铺")
         self.setFixedSize(1000, 800)
         self.id, self.name, self.comp_pub_key, self.slogan = info
@@ -159,7 +168,6 @@ class QBossWidget(QTabWidget):
             QMessageBox.information(self, "更新成功", "已成功更新应用信息。")
             self.reset_tab2_ui()
 
-
     def reset_tab2_ui(self):
         if self.db is not None:
             self.app_list = self.db.select("SELECT * FROM 应用程序 WHERE 店铺编号 = '{}'".format(self.id))
@@ -211,10 +219,6 @@ class QBossWidget(QTabWidget):
         self.bn_shelve.setFont(font)
         self.bn_shelve.clicked.connect(self.app_shelve_clicked)
         self.tab3_layout.addRow(self.bn_shelve)
-
-    def app_info_update_clicked(self):
-
-        pass
 
     def app_shelve_clicked(self):
         name = self.ln_new_app_name.text()
